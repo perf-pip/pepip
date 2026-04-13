@@ -8,9 +8,9 @@ patterns.
 
 `pepip` is a Python CLI tool that reuses dependencies across projects.
 
-- It installs packages once into a shared global virtual environment.
+- It installs resolved package versions once into an immutable shared store.
 - It creates per-project virtual environments that symlink package entries from
-	the shared global environment.
+	the shared store.
 - It aims to reduce repeated downloads and disk duplication, similar to pnpm's
 	shared-store model for Node.js.
 
@@ -18,18 +18,19 @@ patterns.
 
 Given `pepip install ...`:
 
-1. Ensure global venv exists (`~/.pepip/global-venv` or `$PEPIP_HOME/global-venv`).
-2. Install requested packages into that global venv using `uv pip install`.
-3. Diff global `site-packages` before/after install to detect new entries.
+1. Ensure build venv exists (`~/.pepip/global-venv` or `$PEPIP_HOME/global-venv`).
+2. Install requested packages into a temporary target directory using
+	 `uv pip install --target`.
+3. Copy each resolved distribution version into `$PEPIP_HOME/packages` if it is
+	 not already present.
 4. Ensure local project venv exists (`.venv` by default).
-5. Symlink only newly added entries from global `site-packages` into local
-	 `site-packages`.
+5. Symlink resolved entries from the immutable store into local `site-packages`.
 
 ## 3) Repository Map
 
 - `pepip/installer.py`
 	- Core logic: venv creation, package install, site-packages detection,
-		symlink linking.
+		package-version storage, symlink linking.
 	- Main public API: `install(...)`.
 - `pepip/cli.py`
 	- CLI parser + command dispatch.
@@ -59,6 +60,12 @@ Given `pepip install ...`:
 	- Otherwise defaults to `~/.pepip`.
 - `GLOBAL_VENV`
 	- Computed as `PEPIP_HOME / "global-venv"`.
+	- Used as the build interpreter for target installs, not as the package
+		store.
+- Package store
+	- Computed under `PEPIP_HOME / "packages"`.
+	- Scoped by the build interpreter ABI/platform so compiled wheels are not
+		mixed across incompatible Python runtimes.
 - Local venv
 	- Defaults to `.venv` unless overridden by `--venv`.
 
@@ -77,8 +84,10 @@ Given `pepip install ...`:
 4. **`install(...)` requires package input.**
 	 - Must receive package specifiers and/or requirements file.
 
-5. **Global install happens before local linking.**
-	 - New entries are computed by diffing global site-packages pre/post install.
+5. **Resolved packages are stored before local linking.**
+	 - Local symlinks must point at immutable package-version store entries.
+	 - A mutable global `site-packages` directory must not be used as the source
+		 of project symlinks.
 
 6. **Site-packages path resolution should remain interpreter-aware.**
 	 - `_site_packages(...)` prefers querying the venv's own Python via
@@ -146,12 +155,11 @@ When adding features, consider whether they affect:
 
 ## 10) Known Limitations / Design Tradeoffs
 
-- Current linking step only links entries detected as newly added during the
-	current install operation.
-- Existing global packages that predate the current install call are not
-	retro-linked unless they appear in the new-entry diff.
-- Behavior is intentional in current design, but any change here must be backed
-	by explicit tests and documentation updates.
+- The local venv links resolved site-package entries, but console scripts from
+	installed packages are not currently linked into the local venv's `bin` /
+	`Scripts` directory.
+- Namespace packages can still need special handling if multiple distributions
+	own the same top-level package directory.
 
 ## 11) Quick Task Routing for Future Agents
 

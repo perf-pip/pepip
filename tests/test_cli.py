@@ -73,12 +73,12 @@ class TestCLIInstall:
         with patch("pepip.cli.install", return_value={"numpy"}):
             rc = main(["install", "numpy"])
         captured = capsys.readouterr()
-        assert "1 new entry" in captured.out
+        assert "1 entry" in captured.out
         assert rc == 0
 
     def test_install_plural_entries_message(self, capsys):
         with patch("pepip.cli.install", return_value={"numpy", "numpy-2.0.dist-info"}):
             rc = main(["install", "numpy"])
         captured = capsys.readouterr()
-        assert "2 new entries" in captured.out
+        assert "2 entries" in captured.out
         assert rc == 0

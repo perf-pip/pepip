@@ -1,8 +1,15 @@
+<p align="center">
+<img src="https://raw.githubusercontent.com/perf-pip/pepip/main/assets/cover.jpg" alt="Agent Action Guard" height="500"/>
+<!-- 
+convert assets/archive/banner.png -resize 900 assets/cover.jpg
+-->
+</p>
+
 # 🐍 pepip
 
 > **uv and pip, but shared.** Install packages once. Use them everywhere.
 
-`pepip` is the [pnpm](https://pnpm.io/) of Python — a drop-in alternative to `pip` / `uv` that stores each package **once** in a global environment and wires your project `.venv` to it via symlinks. No more downloading `torch` five times.
+`pepip` is the [pnpm](https://pnpm.io/) of Python — a drop-in alternative to `pip` / `uv` that stores each resolved package version **once** in a shared store and wires your project `.venv` to it via symlinks. No more downloading `torch` five times. It internatly uses `uv` for package resolution and venv management, so you get all the same features and compatibility, but with a fraction of the disk usage and faster installs for subsequent projects.
 
 ---
 
@@ -19,10 +26,10 @@ project-c/.venv/   →  numpy (35 MB)  pandas (15 MB)  torch (2.4 GB)
 
 ## ✅ The Solution
 
-`pepip` keeps a single global environment and symlinks each project's `.venv` back to it. Same Python import behaviour. A fraction of the disk usage.
+`pepip` keeps an immutable shared package-version store and symlinks each project's `.venv` back to the exact versions it resolved. Same Python import behaviour. A fraction of the disk usage.
 
 ```
-~/.pepip/global-venv/   →  numpy (35 MB)  pandas (15 MB)  torch (2.4 GB)  ← stored once
+~/.pepip/packages/      →  numpy 2.0 (35 MB)  pandas 2.2 (15 MB)  torch 2.5 (2.4 GB)  ← stored once per version
 
 project-a/.venv/        →  numpy (symlink)  pandas (symlink)  torch (symlink)
 project-b/.venv/        →  numpy (symlink)  pandas (symlink)  torch (symlink)
@@ -43,7 +50,7 @@ pip install pepip
 
 ## 📦 Usage
 
-### Install packages
+### Install packages using pepip
 
 ```bash
 # Install one or more packages
@@ -77,27 +84,32 @@ This is handy for sharing a global store across a whole team on a shared machine
 
 ```
 ~/.pepip/
-└── global-venv/
-    └── lib/
-        └── python3.12/
-            └── site-packages/
-                ├── numpy/                ← real files, downloaded once
-                ├── numpy-2.0.dist-info/
-                ├── pandas/
-                └── ...
+├── global-venv/                         ← build interpreter for uv installs
+└── packages/
+    └── cpython-312-linux-x86_64/
+        ├── numpy-2.0/
+        │   ├── numpy/                   ← real files, stored once
+        │   └── numpy-2.0.dist-info/
+        ├── requests-2.25.1/
+        │   ├── requests/
+        │   └── requests-2.25.1.dist-info/
+        └── requests-2.26.0/
+            ├── requests/
+            └── requests-2.26.0.dist-info/
 
 my-project/
 └── .venv/
     └── lib/
         └── python3.12/
             └── site-packages/
-                ├── numpy   ──────────→  ~/.pepip/global-venv/.../numpy   (symlink, ~bytes)
-                ├── pandas  ──────────→  ~/.pepip/global-venv/.../pandas  (symlink, ~bytes)
+                ├── numpy   ──────────→  ~/.pepip/packages/.../numpy-2.0/numpy   (symlink, ~bytes)
+                ├── pandas  ──────────→  ~/.pepip/packages/.../pandas-2.2/pandas  (symlink, ~bytes)
                 └── ...
 ```
 
-- **First install** of a package — downloads once into the global store, then symlinks.
-- **Every subsequent project** using the same package — symlinks only. Near-instant, zero extra disk.
+- **First install** of a package version — downloads once into the shared store, then symlinks.
+- **Every subsequent project** using the same package version — symlinks only. Near-instant, zero extra disk.
+- **Different projects can use different versions** — for example, one project can link to `requests==2.25.1` while another links to `requests==2.26.0`.
 
 ---
 
@@ -150,7 +162,7 @@ pytest
 [pnpm](https://pnpm.io/) — the Node.js package manager that pioneered content-addressable, symlink-based shared stores. `pepip` brings the same idea to the Python ecosystem.
 
 ## Acknowledgements
-- [uv](https://docs.astral.sh/uv/) — used for _venv_ management and package installation in the global store.
+- [uv](https://docs.astral.sh/uv/) — used for _venv_ management, package resolution, and shared download caching.
 
 ---
 

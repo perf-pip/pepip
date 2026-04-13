@@ -1,4 +1,4 @@
-"""pepip — shared global environment package installer using symlinks."""
+"""pepip — shared package-version store installer using symlinks."""
 
 __version__ = "0.0.1"
 __all__ = ["install"]
@@ -6,10 +6,10 @@ __all__ = ["install"]
 from pepip.installer import install
 
 __doc__ = """
-pepip installs Python packages into a single shared global virtual environment
-(``~/.pepip/global-venv``) using ``uv``, then creates symlinks inside the
+pepip installs resolved Python package versions into an immutable shared store
+(``~/.pepip/packages``) using ``uv``, then creates symlinks inside the
 project-local ``.venv`` directory so each project can activate its own
-environment while reusing already-downloaded packages.
+environment while reusing package files and uv's download cache.
 
 Usage::
 

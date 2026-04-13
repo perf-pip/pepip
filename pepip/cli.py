@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from pepip.installer import GLOBAL_VENV, install
+from pepip.installer import PEPIP_HOME, install
 
 
 def _build_parser():
@@ -14,13 +14,13 @@ def _build_parser():
     parser = argparse.ArgumentParser(
         prog="pepip",
         description=(
-            "pepip — shared global environment package installer.\n\n"
-            "Installs packages into a single global virtual environment "
-            "(%(global_venv)s) using uv, then symlinks them into the "
+            "pepip — shared package store installer.\n\n"
+            "Installs resolved package versions into an immutable shared store "
+            "(%(pepip_home)s/packages) using uv, then symlinks them into the "
             "project-local .venv so each project can activate its own "
-            "environment while reusing already-downloaded packages."
+            "environment while reusing packages."
         )
-        % {"global_venv": GLOBAL_VENV},
+        % {"pepip_home": PEPIP_HOME},
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
@@ -29,11 +29,11 @@ def _build_parser():
     # --- install -----------------------------------------------------------
     install_parser = subparsers.add_parser(
         "install",
-        help="Install packages into the global env and link them into .venv",
+        help="Install packages into the shared store and link them into .venv",
         description=(
             "Install one or more packages (or a requirements file) into the "
-            "shared global virtual environment and create symlinks inside the "
-            "project-local .venv directory."
+            "shared package store and create symlinks inside the project-local "
+            ".venv directory."
         ),
     )
     install_parser.add_argument(
@@ -82,7 +82,7 @@ def main(argv=None) -> int:
             return 1  # pragma: no cover
 
         try:
-            new_entries = install(
+            linked_entries = install(
                 packages=args.packages or None,
                 requirements_file=args.requirements,
                 local_venv=Path(args.venv),
@@ -94,10 +94,10 @@ def main(argv=None) -> int:
             print(f"pepip: error: {exc}", file=sys.stderr)
             return 1
 
-        pkg_word = "entry" if len(new_entries) == 1 else "entries"
+        pkg_word = "entry" if len(linked_entries) == 1 else "entries"
         print(
-            f"Successfully installed {len(new_entries)} new {pkg_word} "
-            f"and linked them into '{args.venv}'."
+            f"Successfully installed and linked {len(linked_entries)} "
+            f"{pkg_word} into '{args.venv}'."
         )
         return 0
 

@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import subprocess
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 import pepip.installer as installer
-from pepip.installer import (GLOBAL_VENV, _entries, _python_in_venv,
-                             _site_packages, _uv_executable,
-                             ensure_global_venv, ensure_local_venv, install,
-                             link_packages)
+from pepip.installer import (_entries, _python_in_venv, _site_packages,
+                             _uv_executable, ensure_global_venv,
+                             ensure_local_venv, install, link_packages)
 
 # ---------------------------------------------------------------------------
 # _uv_executable
@@ -268,6 +266,32 @@ class TestInstall:
         site.mkdir(parents=True)
         return site
 
+    def _write_fake_dist(
+        self, site: Path, name: str, version: str, module_name: str | None = None
+    ) -> None:
+        module_name = module_name or name.replace("-", "_")
+
+        package_dir = site / module_name
+        package_dir.mkdir(parents=True, exist_ok=True)
+        (package_dir / "__init__.py").write_text(f"__version__ = '{version}'\n")
+
+        dist_info = site / f"{name.replace('-', '_')}-{version}.dist-info"
+        dist_info.mkdir(parents=True, exist_ok=True)
+        (dist_info / "METADATA").write_text(
+            f"Name: {name}\nVersion: {version}\n",
+            encoding="utf-8",
+        )
+        (dist_info / "RECORD").write_text(
+            "\n".join(
+                [
+                    f"{module_name}/__init__.py,,",
+                    f"{dist_info.name}/METADATA,,",
+                    f"{dist_info.name}/RECORD,,",
+                ]
+            ),
+            encoding="utf-8",
+        )
+
     def test_raises_without_packages_or_requirements(self, tmp_path):
         with pytest.raises(ValueError, match="Provide at least one"):
             install(local_venv=tmp_path / ".venv")
@@ -285,23 +309,22 @@ class TestInstall:
         local_site.mkdir(parents=True)
 
         def fake_run(cmd, **kwargs):
-            # Simulate uv installing numpy into the global site-packages.
             if "install" in cmd:
-                (global_site / "numpy").mkdir(exist_ok=True)
-                (global_site / "numpy-2.0.dist-info").mkdir(exist_ok=True)
+                target = Path(cmd[cmd.index("--target") + 1])
+                self._write_fake_dist(target, "numpy", "2.0")
             return MagicMock(returncode=0)
 
         with patch.object(installer, "GLOBAL_VENV", global_venv):
             with patch("pepip.installer._uv_executable", return_value="uv"):
                 with patch("pepip.installer._site_packages") as mock_sp:
-                    mock_sp.side_effect = lambda v: (
-                        global_site if v == global_venv else local_site
-                    )
+                    mock_sp.return_value = local_site
                     with patch("subprocess.run", side_effect=fake_run):
-                        new_entries = install(packages=["numpy"], local_venv=local_venv)
+                        linked_entries = install(
+                            packages=["numpy"], local_venv=local_venv
+                        )
 
-        assert "numpy" in new_entries
-        assert "numpy-2.0.dist-info" in new_entries
+        assert "numpy" in linked_entries
+        assert "numpy-2.0.dist-info" in linked_entries
         assert (local_site / "numpy").is_symlink()
         assert (local_site / "numpy-2.0.dist-info").is_symlink()
 
@@ -320,6 +343,9 @@ class TestInstall:
 
         def fake_run(cmd, **kwargs):
             run_calls.append(cmd)
+            if "install" in cmd:
+                target = Path(cmd[cmd.index("--target") + 1])
+                self._write_fake_dist(target, "requests", "2.26.0")
             return MagicMock(returncode=0)
 
         with patch.object(installer, "GLOBAL_VENV", global_venv):
@@ -335,3 +361,87 @@ class TestInstall:
         install_call = next(c for c in run_calls if "install" in c)
         assert "-r" in install_call
         assert str(req_file) in install_call
+        assert "--target" in install_call
+
+    def test_different_projects_keep_different_package_versions(self, tmp_path):
+        global_venv = tmp_path / "pepip-home" / "global-venv"
+        global_venv.mkdir(parents=True)
+        py_tag = f"python{sys.version_info.major}.{sys.version_info.minor}"
+
+        project_a_venv = tmp_path / "project-a" / ".venv"
+        project_a_site = project_a_venv / "lib" / py_tag / "site-packages"
+        project_a_site.mkdir(parents=True)
+
+        project_b_venv = tmp_path / "project-b" / ".venv"
+        project_b_site = project_b_venv / "lib" / py_tag / "site-packages"
+        project_b_site.mkdir(parents=True)
+
+        def fake_run(cmd, **kwargs):
+            if "install" in cmd:
+                target = Path(cmd[cmd.index("--target") + 1])
+                version = "2.26.0" if "requests==2.26.0" in cmd else "2.25.1"
+                self._write_fake_dist(target, "requests", version)
+            return MagicMock(returncode=0)
+
+        def fake_site_packages(venv):
+            return project_a_site if venv == project_a_venv else project_b_site
+
+        with patch.object(installer, "GLOBAL_VENV", global_venv):
+            with patch("pepip.installer._uv_executable", return_value="uv"):
+                with patch(
+                    "pepip.installer._site_packages",
+                    side_effect=fake_site_packages,
+                ):
+                    with patch("subprocess.run", side_effect=fake_run):
+                        install(
+                            packages=["requests==2.25.1"],
+                            local_venv=project_a_venv,
+                        )
+                        install(
+                            packages=["requests==2.26.0"],
+                            local_venv=project_b_venv,
+                        )
+
+        project_a_requests = project_a_site / "requests"
+        project_b_requests = project_b_site / "requests"
+
+        assert project_a_requests.is_symlink()
+        assert project_b_requests.is_symlink()
+        assert project_a_requests.resolve() != project_b_requests.resolve()
+        assert "2.25.1" in (project_a_requests / "__init__.py").read_text()
+        assert "2.26.0" in (project_b_requests / "__init__.py").read_text()
+        assert (project_a_site / "requests-2.25.1.dist-info").is_symlink()
+        assert (project_b_site / "requests-2.26.0.dist-info").is_symlink()
+
+    def test_reinstalling_project_replaces_stale_version_metadata(self, tmp_path):
+        global_venv = tmp_path / "pepip-home" / "global-venv"
+        global_venv.mkdir(parents=True)
+        py_tag = f"python{sys.version_info.major}.{sys.version_info.minor}"
+
+        local_venv = tmp_path / ".venv"
+        local_site = local_venv / "lib" / py_tag / "site-packages"
+        local_site.mkdir(parents=True)
+
+        def fake_run(cmd, **kwargs):
+            if "install" in cmd:
+                target = Path(cmd[cmd.index("--target") + 1])
+                version = "2.26.0" if "requests==2.26.0" in cmd else "2.25.1"
+                self._write_fake_dist(target, "requests", version)
+            return MagicMock(returncode=0)
+
+        with patch.object(installer, "GLOBAL_VENV", global_venv):
+            with patch("pepip.installer._uv_executable", return_value="uv"):
+                with patch("pepip.installer._site_packages", return_value=local_site):
+                    with patch("subprocess.run", side_effect=fake_run):
+                        install(
+                            packages=["requests==2.25.1"],
+                            local_venv=local_venv,
+                        )
+                        install(
+                            packages=["requests==2.26.0"],
+                            local_venv=local_venv,
+                        )
+
+        assert "2.26.0" in ((local_site / "requests") / "__init__.py").read_text()
+        assert not (local_site / "requests-2.25.1.dist-info").exists()
+        assert (local_site / "requests-2.26.0.dist-info").is_symlink()

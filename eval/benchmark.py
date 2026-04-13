@@ -13,8 +13,8 @@ Two strategies are benchmarked side-by-side:
   created by ``uv venv`` with packages installed via ``uv pip install``.
   This is the standard workflow most developers use today.
 
-* **pepip** — packages are installed once into a shared global environment;
-  each project's ``.venv`` contains only cheap symlinks to the global copy.
+* **pepip** — resolved package versions are stored once in a shared immutable
+  store; each project's ``.venv`` contains only cheap symlinks to that store.
 
 Usage
 -----
@@ -25,19 +25,18 @@ Run from the repository root::
 Optional flags::
 
     --projects N      Number of simulated projects (default: 5)
-    --packages PKG…   Space-separated package list (default: tomli packaging requests numpy pandas)
+    --packages PKG…   Space-separated package list
+                      (default: tomli packaging requests numpy pandas)
     --no-cleanup      Keep temporary directories after the run for inspection
 
 Output example::
 
-┌──────────────┬─────────────────┬──────────────┬────────────────────────────────────────────┐
-│  pepip vs uv — evaluation (5 project(s), packages: tomli packaging requests numpy pandas)  │
-├──────────────┬─────────────────┬──────────────┬────────────────────────────────────────────┤
-│  Metric      │  uv (baseline)  │  pepip       │  Improvement                               │
-├──────────────┼─────────────────┼──────────────┼────────────────────────────────────────────┤
-│  Latency     │  0.56 s         │  0.33 s ★    │  -41.3 %                                   │
-│  Disk usage  │  475.19 MB      │  95.22 MB ★  │  -80.0 %                                   │
-└──────────────┴─────────────────┴──────────────┴────────────────────────────────────────────┘
+┌────────────┬─────────────┬────────┬─────────────┐
+│  Metric    │  uv         │ pepip  │ Improvement │
+├────────────┼─────────────┼────────┼─────────────┤
+│  Latency   │  0.56 s     │ 0.33 s │ -41.3 %     │
+│  Disk      │  475.19 MB  │ 95 MB  │ -80.0 %     │
+└────────────┴─────────────┴────────┴─────────────┘
 
   ⏱  pepip saved 0.23 s of install time across 5 project(s).
   💾  pepip saved 379.97 MB of disk space across 5 project(s).
@@ -166,19 +165,17 @@ def _run_pepip(
     projects: list[Path],
     packages: list[str],
     uv: str,
-    global_venv: Path,
+    state_root: Path,
 ) -> EvalResult:
-    """Install *packages* using pepip's shared global venv + symlink approach."""
+    """Install *packages* using pepip's shared package-version store."""
     # Import here so this script can run both with editable install and from source.
     try:
-        from pepip.installer import (_entries, _python_in_venv, _site_packages,
-                                     link_packages)
-    except ImportError as exc:
+        import pepip.installer as installer
+    except ImportError:
         repo_root = Path(__file__).resolve().parents[1]
         sys.path.insert(0, str(repo_root))
         try:
-            from pepip.installer import (_entries, _python_in_venv,
-                                         _site_packages, link_packages)
+            import pepip.installer as installer
         except ImportError as final_exc:
             raise SystemExit(
                 f"Cannot import pepip: {final_exc}\n"
@@ -187,33 +184,24 @@ def _run_pepip(
 
     start = time.perf_counter()
 
-    # ── Step 1: create the global venv once ──────────────────────────────────
-    subprocess.run([uv, "venv", str(global_venv)], check=True, capture_output=True)
-
-    # ── Step 2: install packages into the global venv once ───────────────────
-    global_python = _python_in_venv(global_venv)
-    subprocess.run(
-        [uv, "pip", "install", "--python", str(global_python)] + packages,
-        check=True,
-        capture_output=True,
-    )
-    global_site = _site_packages(global_venv)
-    global_entries = _entries(global_site)
-
-    # ── Step 3: for each project, create a local venv and symlink packages ───
-    for project in projects:
-        local_venv = project / ".venv"
-        if not local_venv.exists():
-            subprocess.run(
-                [uv, "venv", str(local_venv)], check=True, capture_output=True
+    old_global_venv = installer.GLOBAL_VENV
+    old_uv_executable = installer._uv_executable
+    installer.GLOBAL_VENV = state_root / "global-venv"
+    installer._uv_executable = lambda: uv
+    try:
+        for project in projects:
+            installer.install(
+                packages=packages,
+                local_venv=project / ".venv",
             )
-        local_site = _site_packages(local_venv)
-        link_packages(global_site, local_site, global_entries)
+    finally:
+        installer.GLOBAL_VENV = old_global_venv
+        installer._uv_executable = old_uv_executable
 
     elapsed = time.perf_counter() - start
 
-    # Disk: global venv + all project venvs (symlinks count as tiny)
-    total_bytes = _du(global_venv) + sum(_du(p) for p in projects)
+    # Disk: build venv + package store + all project venvs.
+    total_bytes = _du(state_root)
     return EvalResult(label="pepip", elapsed_s=elapsed, disk_bytes=total_bytes)
 
 
@@ -289,23 +277,28 @@ def _print_table(
     storage_saved = baseline.disk_bytes - pepip_result.disk_bytes
     if latency_saved > 0:
         print(
-            f"  ⏱  pepip saved {_fmt_seconds(latency_saved)} of install time across {n_projects} project(s)."
+            f"  ⏱  pepip saved {_fmt_seconds(latency_saved)} of install time "
+            f"across {n_projects} project(s)."
         )
     else:
         print(
-            f"  ⏱  pepip was {_fmt_seconds(-latency_saved)} slower than uv for {n_projects} project(s)."
+            f"  ⏱  pepip was {_fmt_seconds(-latency_saved)} slower than uv "
+            f"for {n_projects} project(s)."
         )
         print(
-            "     (Expected for n=1; savings grow with more projects sharing the same packages.)"
+            "     (Expected for n=1; savings grow with more projects sharing "
+            "the same packages.)"
         )
     if storage_saved > 0:
         print(
-            f"  💾  pepip saved {_fmt_bytes(storage_saved)} of disk space across {n_projects} project(s)."
+            f"  💾  pepip saved {_fmt_bytes(storage_saved)} of disk space "
+            f"across {n_projects} project(s)."
         )
     else:
         print(f"  💾  pepip used {_fmt_bytes(-storage_saved)} more disk space than uv.")
         print(
-            "     (Expected for n=1; savings grow with more projects sharing the same packages.)"
+            "     (Expected for n=1; savings grow with more projects sharing "
+            "the same packages.)"
         )
     print()
     print("  ★ = better result")
@@ -335,7 +328,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         nargs="+",
         default=["tomli", "packaging", "requests", "numpy", "pandas"],
         metavar="PKG",
-        help="Packages to install in each project (default: tomli packaging requests numpy pandas)",
+        help=(
+            "Packages to install in each project "
+            "(default: tomli packaging requests numpy pandas)"
+        ),
     )
     parser.add_argument(
         "--no-cleanup",
@@ -353,7 +349,6 @@ def main(argv: list[str] | None = None) -> None:
         tmpdir = Path(tmpdir_str)
         baseline_root = tmpdir / "baseline"
         pepip_root = tmpdir / "pepip"
-        global_venv = pepip_root / "global-venv"
 
         # Create separate project directories for each strategy.
         baseline_projects = []
@@ -368,13 +363,14 @@ def main(argv: list[str] | None = None) -> None:
             pepip_projects.append(pp)
 
         print(
-            f"\nBenchmarking {args.projects} project(s) with packages: {' '.join(args.packages)}"
+            f"\nBenchmarking {args.projects} project(s) with packages: "
+            f"{' '.join(args.packages)}"
         )
         print("Running uv baseline  …", flush=True)
         baseline = _run_uv_baseline(baseline_projects, args.packages, uv)
 
         print("Running pepip         …", flush=True)
-        pepip_result = _run_pepip(pepip_projects, args.packages, uv, global_venv)
+        pepip_result = _run_pepip(pepip_projects, args.packages, uv, pepip_root)
 
         _print_table(args.projects, args.packages, baseline, pepip_result)
 

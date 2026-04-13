@@ -2,11 +2,14 @@
 
 Workflow
 --------
-1. Ensure a shared global virtual environment exists at ``~/.pepip/global-venv``.
-2. Install the requested packages into that global venv using ``uv pip install``.
-3. Ensure a project-local ``.venv`` exists (created with ``uv venv``).
-4. For every package entry that was added to the global site-packages, create
-   a symlink inside the local site-packages directory pointing to the global one.
+1. Ensure a shared build virtual environment exists at ``~/.pepip/global-venv``.
+2. Install the requested packages into a temporary target directory using
+   ``uv pip install`` and uv's shared cache.
+3. Copy each resolved distribution version into an immutable shared package
+   store under ``~/.pepip/packages`` if it is not already present.
+4. Ensure a project-local ``.venv`` exists (created with ``uv venv``).
+5. Symlink the resolved package entries from the immutable store into the local
+   site-packages directory.
 
 This mirrors the ``pnpm`` approach for Node.js: packages live in a single
 content-addressable store and are accessed from projects via symlinks, saving
@@ -15,10 +18,17 @@ download time and disk space.
 
 from __future__ import annotations
 
+import csv
 import os
+import platform
+import re
+import shutil
 import subprocess
 import sys
-from pathlib import Path
+import tempfile
+from dataclasses import dataclass
+from email.parser import Parser
+from pathlib import Path, PurePosixPath
 
 # ---------------------------------------------------------------------------
 # Configurable paths
@@ -27,8 +37,18 @@ from pathlib import Path
 #: Root directory for pepip's global state.
 PEPIP_HOME: Path = Path(os.environ.get("PEPIP_HOME", Path.home() / ".pepip"))
 
-#: Shared global virtual environment that stores all installed packages.
+#: Shared virtual environment used as the Python interpreter for target installs.
 GLOBAL_VENV: Path = PEPIP_HOME / "global-venv"
+
+
+@dataclass
+class StoredDistribution:
+    """A resolved distribution and the top-level entries it owns."""
+
+    name: str
+    version: str
+    entries: set[str]
+    store_path: Path
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +83,8 @@ def _uv_executable() -> str:
 
     raise FileNotFoundError(
         "Could not find the 'uv' executable. "
-        "Install it with:  pip install uv  or  curl -LsSf https://astral.sh/uv/install.sh | sh"
+        "Install it with:  pip install uv  or  "
+        "curl -LsSf https://astral.sh/uv/install.sh | sh"
     )
 
 
@@ -108,6 +129,198 @@ def _entries(site_packages: Path) -> set[str]:
     if not site_packages.exists():
         return set()
     return {entry.name for entry in site_packages.iterdir()}
+
+
+def _normalize_dist_name(name: str) -> str:
+    """Return a normalized package name per PEP 503."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _package_store_root(python: Path | None = None) -> Path:
+    """Return the Python/platform-specific root for immutable package entries."""
+    scope = None
+    if python and python.exists():
+        result = subprocess.run(
+            [
+                str(python),
+                "-c",
+                (
+                    "import platform, sys; "
+                    "print(f'{sys.implementation.cache_tag}-"
+                    "{sys.platform}-{platform.machine() or \"unknown\"}')"
+                ),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            scope = result.stdout.strip()
+
+    if scope is None:
+        cache_tag = sys.implementation.cache_tag or (
+            f"py{sys.version_info.major}{sys.version_info.minor}"
+        )
+        machine = platform.machine() or "unknown"
+        scope = f"{cache_tag}-{sys.platform}-{machine}"
+
+    safe_scope = re.sub(r"[^A-Za-z0-9_.-]+", "_", scope)
+    return GLOBAL_VENV.parent / "packages" / safe_scope
+
+
+def _safe_store_name(name: str, version: str) -> str:
+    normalized = _normalize_dist_name(name)
+    safe_version = re.sub(r"[^A-Za-z0-9_.!+-]+", "_", version)
+    return f"{normalized}-{safe_version}"
+
+
+def _metadata_from_dist_info(dist_info: Path) -> tuple[str, str]:
+    """Read distribution name/version from a ``.dist-info`` directory."""
+    metadata = dist_info / "METADATA"
+    if metadata.exists():
+        message = Parser().parsestr(
+            metadata.read_text(encoding="utf-8", errors="replace")
+        )
+        name = message.get("Name")
+        version = message.get("Version")
+        if name and version:
+            return name, version
+
+    stem = dist_info.name[: -len(".dist-info")]
+    name, separator, version = stem.rpartition("-")
+    if not separator or not name or not version:
+        raise ValueError(f"Could not determine package metadata for {dist_info}")
+    return name, version
+
+
+def _record_roots(dist_info: Path, site_packages: Path) -> set[str]:
+    """Return top-level site-package entries owned by a distribution."""
+    entries = {dist_info.name}
+
+    top_level = dist_info / "top_level.txt"
+    if top_level.exists():
+        top_level_text = top_level.read_text(encoding="utf-8", errors="replace")
+        for line in top_level_text.splitlines():
+            name = line.strip()
+            if not name:
+                continue
+            for candidate in (name, f"{name}.py"):
+                if (site_packages / candidate).exists():
+                    entries.add(candidate)
+
+    record = dist_info / "RECORD"
+    if not record.exists():
+        return entries
+
+    with record.open(encoding="utf-8", errors="replace", newline="") as record_file:
+        for row in csv.reader(record_file):
+            if not row:
+                continue
+
+            path = PurePosixPath(row[0])
+            if path.is_absolute() or ".." in path.parts or not path.parts:
+                continue
+
+            root = path.parts[0]
+            if root in {"bin", "__pycache__"} or root.endswith(".data"):
+                continue
+            if (site_packages / root).exists():
+                entries.add(root)
+
+    return entries
+
+
+def _copy_entries(source_site: Path, destination_site: Path, entries: set[str]) -> None:
+    """Copy selected top-level entries from one site-packages tree to another."""
+    destination_site.mkdir(parents=True, exist_ok=True)
+    for name in sorted(entries):
+        source = source_site / name
+        destination = destination_site / name
+        if not source.exists() or destination.exists():
+            continue
+        if source.is_dir() and not source.is_symlink():
+            shutil.copytree(source, destination, symlinks=True)
+        else:
+            shutil.copy2(source, destination, follow_symlinks=False)
+
+
+def _store_distribution(
+    staging_site: Path, dist_info: Path, store_root: Path
+) -> StoredDistribution:
+    """Ensure one resolved distribution is present in the immutable store."""
+    name, version = _metadata_from_dist_info(dist_info)
+    entries = _record_roots(dist_info, staging_site)
+    store_path = store_root / _safe_store_name(name, version)
+
+    if not store_path.exists():
+        store_path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(
+            dir=store_path.parent, prefix=f".{store_path.name}."
+        ) as tmp_dir:
+            candidate = Path(tmp_dir) / "package"
+            _copy_entries(staging_site, candidate, entries)
+            try:
+                candidate.rename(store_path)
+            except FileExistsError:
+                # Another pepip process stored the same immutable package first.
+                pass
+
+    return StoredDistribution(
+        name=name, version=version, entries=entries, store_path=store_path
+    )
+
+
+def _store_resolved_distributions(
+    staging_site: Path, python: Path | None = None
+) -> list[StoredDistribution]:
+    """Store every resolved distribution from a target install."""
+    store_root = _package_store_root(python)
+    distributions = []
+
+    for dist_info in sorted(staging_site.glob("*.dist-info")):
+        distributions.append(_store_distribution(staging_site, dist_info, store_root))
+
+    if not distributions:
+        raise RuntimeError(f"No distributions were installed into {staging_site}")
+
+    return distributions
+
+
+def _dist_name_from_info_entry(entry: Path) -> str | None:
+    metadata = entry / "METADATA"
+    if metadata.exists():
+        message = Parser().parsestr(
+            metadata.read_text(encoding="utf-8", errors="replace")
+        )
+        name = message.get("Name")
+        if name:
+            return name
+
+    for suffix in (".dist-info", ".egg-info"):
+        if entry.name.endswith(suffix):
+            stem = entry.name[: -len(suffix)]
+            name, separator, _version = stem.rpartition("-")
+            return name if separator else stem
+
+    return None
+
+
+def _remove_stale_distribution_links(
+    local_site: Path, dist_names: set[str], keep_entries: set[str]
+) -> None:
+    """Remove old symlinked metadata for distributions being relinked."""
+    if not local_site.exists():
+        return
+
+    normalized_names = {_normalize_dist_name(name) for name in dist_names}
+    for entry in local_site.iterdir():
+        if entry.name in keep_entries or not entry.is_symlink():
+            continue
+        if not (entry.name.endswith(".dist-info") or entry.name.endswith(".egg-info")):
+            continue
+
+        dist_name = _dist_name_from_info_entry(entry)
+        if dist_name and _normalize_dist_name(dist_name) in normalized_names:
+            entry.unlink()
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +405,7 @@ def install(
     requirements_file: str | None = None,
     local_venv: Path | None = None,
 ) -> set[str]:
-    """Install packages into the global venv and symlink them into the local venv.
+    """Install packages into the shared store and symlink them into the local venv.
 
     Parameters
     ----------
@@ -207,8 +420,8 @@ def install(
     Returns
     -------
     set[str]
-        Names of the site-packages entries that were newly added to the global
-        environment and linked into the local environment.
+        Names of the site-packages entries that were linked into the local
+        environment.
 
     Raises
     ------
@@ -227,37 +440,47 @@ def install(
 
     uv = _uv_executable()
 
-    # 1. Ensure global venv exists.
+    # 1. Ensure the shared build venv exists.
     ensure_global_venv()
-    global_site = _site_packages(GLOBAL_VENV)
 
-    # 2. Snapshot site-packages before installation.
-    before = _entries(global_site)
+    GLOBAL_VENV.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=GLOBAL_VENV.parent) as staging_dir:
+        staging_site = Path(staging_dir) / "site-packages"
 
-    # 3. Install packages into the global venv via uv.
-    cmd: list[str] = [
-        uv,
-        "pip",
-        "install",
-        "--python",
-        str(_python_in_venv(GLOBAL_VENV)),
-    ]
-    if packages:
-        cmd.extend(packages)
-    if requirements_file:
-        cmd.extend(["-r", requirements_file])
+        # 2. Resolve and install packages into an isolated target directory.
+        cmd: list[str] = [
+            uv,
+            "pip",
+            "install",
+            "--python",
+            str(_python_in_venv(GLOBAL_VENV)),
+            "--target",
+            str(staging_site),
+        ]
+        if packages:
+            cmd.extend(packages)
+        if requirements_file:
+            cmd.extend(["-r", requirements_file])
 
-    subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True)
 
-    # 4. Determine which entries are new.
-    after = _entries(global_site)
-    new_entries = after - before
+        # 3. Store each resolved distribution version immutably.
+        distributions = _store_resolved_distributions(
+            staging_site, _python_in_venv(GLOBAL_VENV)
+        )
 
-    # 5. Ensure the local venv exists.
-    ensure_local_venv(local_venv)
-    local_site = _site_packages(local_venv)
+        # 4. Ensure the local venv exists.
+        ensure_local_venv(local_venv)
+        local_site = _site_packages(local_venv)
 
-    # 6. Symlink new entries into the local venv.
-    link_packages(global_site, local_site, new_entries)
+        # 5. Symlink resolved entries into the local venv.
+        linked_entries: set[str] = set()
+        dist_names = {distribution.name for distribution in distributions}
+        for distribution in distributions:
+            linked_entries.update(distribution.entries)
 
-    return new_entries
+        _remove_stale_distribution_links(local_site, dist_names, linked_entries)
+        for distribution in distributions:
+            link_packages(distribution.store_path, local_site, distribution.entries)
+
+    return linked_entries
