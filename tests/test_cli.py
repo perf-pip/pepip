@@ -16,7 +16,9 @@ class TestCLIInstall:
             main(["install"])
 
     def test_install_packages_success(self):
-        with patch("pepip.cli.install", return_value={"numpy", "numpy-2.0.dist-info"}) as mock_install:
+        with patch(
+            "pepip.cli.install", return_value={"numpy", "numpy-2.0.dist-info"}
+        ) as mock_install:
             rc = main(["install", "numpy"])
         assert rc == 0
         mock_install.assert_called_once_with(
@@ -55,7 +57,9 @@ class TestCLIInstall:
         assert "uv not found" in captured.err
 
     def test_install_generic_error(self, capsys):
-        with patch("pepip.cli.install", side_effect=RuntimeError("something went wrong")):
+        with patch(
+            "pepip.cli.install", side_effect=RuntimeError("something went wrong")
+        ):
             rc = main(["install", "numpy"])
         assert rc == 1
         captured = capsys.readouterr()

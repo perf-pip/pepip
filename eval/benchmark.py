@@ -24,20 +24,25 @@ Run from the repository root::
 
 Optional flags::
 
-    --projects N      Number of simulated projects (default: 3)
-    --packages PKG…   Space-separated package list (default: tomli packaging)
+    --projects N      Number of simulated projects (default: 5)
+    --packages PKG…   Space-separated package list (default: tomli packaging requests numpy pandas)
     --no-cleanup      Keep temporary directories after the run for inspection
 
 Output example::
 
-    ┌─────────────────────────────────────────────────────────────────────┐
-    │  pepip vs uv — evaluation (3 projects, packages: tomli packaging)   │
-    ├──────────────┬──────────────────┬──────────────────┬───────────────┤
-    │  Metric      │  uv (baseline)   │  pepip            │  Improvement  │
-    ├──────────────┼──────────────────┼──────────────────┼───────────────┤
-    │  Latency     │  4.12 s          │  2.07 s  ★        │  -49.8 %      │
-    │  Disk usage  │  12.34 MB        │  5.67 MB ★        │  -54.1 %      │
-    └──────────────┴──────────────────┴──────────────────┴───────────────┘
+┌──────────────┬─────────────────┬──────────────┬────────────────────────────────────────────┐
+│  pepip vs uv — evaluation (5 project(s), packages: tomli packaging requests numpy pandas)  │
+├──────────────┬─────────────────┬──────────────┬────────────────────────────────────────────┤
+│  Metric      │  uv (baseline)  │  pepip       │  Improvement                               │
+├──────────────┼─────────────────┼──────────────┼────────────────────────────────────────────┤
+│  Latency     │  0.56 s         │  0.33 s ★    │  -41.3 %                                   │
+│  Disk usage  │  475.19 MB      │  95.22 MB ★  │  -80.0 %                                   │
+└──────────────┴─────────────────┴──────────────┴────────────────────────────────────────────┘
+
+  ⏱  pepip saved 0.23 s of install time across 5 project(s).
+  💾  pepip saved 379.97 MB of disk space across 5 project(s).
+
+  ★ = better result
 
 Notes
 -----
@@ -61,7 +66,6 @@ import time
 from pathlib import Path
 from typing import NamedTuple
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -75,9 +79,7 @@ def _uv() -> str:
     found = shutil.which("uv")
     if found:
         return found
-    raise FileNotFoundError(
-        "Could not find 'uv'. Install it with:  pip install uv"
-    )
+    raise FileNotFoundError("Could not find 'uv'. Install it with:  pip install uv")
 
 
 def _du(path: Path) -> int:
@@ -167,19 +169,21 @@ def _run_pepip(
     global_venv: Path,
 ) -> EvalResult:
     """Install *packages* using pepip's shared global venv + symlink approach."""
-    # Import here so this script can also be run standalone without editable install.
+    # Import here so this script can run both with editable install and from source.
     try:
-        from pepip.installer import (
-            _python_in_venv,
-            _site_packages,
-            _entries,
-            link_packages,
-        )
+        from pepip.installer import (_entries, _python_in_venv, _site_packages,
+                                     link_packages)
     except ImportError as exc:
-        raise SystemExit(
-            f"Cannot import pepip: {exc}\n"
-            "Run:  pip install -e .  from the repository root."
-        ) from exc
+        repo_root = Path(__file__).resolve().parents[1]
+        sys.path.insert(0, str(repo_root))
+        try:
+            from pepip.installer import (_entries, _python_in_venv,
+                                         _site_packages, link_packages)
+        except ImportError as final_exc:
+            raise SystemExit(
+                f"Cannot import pepip: {final_exc}\n"
+                f"Run:  {sys.executable} -m pip install -e .  from {repo_root}"
+            ) from final_exc
 
     start = time.perf_counter()
 
@@ -200,7 +204,9 @@ def _run_pepip(
     for project in projects:
         local_venv = project / ".venv"
         if not local_venv.exists():
-            subprocess.run([uv, "venv", str(local_venv)], check=True, capture_output=True)
+            subprocess.run(
+                [uv, "venv", str(local_venv)], check=True, capture_output=True
+            )
         local_site = _site_packages(local_venv)
         link_packages(global_site, local_site, global_entries)
 
@@ -229,13 +235,15 @@ def _print_table(
         (
             "Latency",
             _fmt_seconds(baseline.elapsed_s),
-            _fmt_seconds(pepip_result.elapsed_s) + (" ★" if pepip_result.elapsed_s < baseline.elapsed_s else ""),
+            _fmt_seconds(pepip_result.elapsed_s)
+            + (" ★" if pepip_result.elapsed_s < baseline.elapsed_s else ""),
             _pct_change(baseline.elapsed_s, pepip_result.elapsed_s),
         ),
         (
             "Disk usage",
             _fmt_bytes(baseline.disk_bytes),
-            _fmt_bytes(pepip_result.disk_bytes) + (" ★" if pepip_result.disk_bytes < baseline.disk_bytes else ""),
+            _fmt_bytes(pepip_result.disk_bytes)
+            + (" ★" if pepip_result.disk_bytes < baseline.disk_bytes else ""),
             _pct_change(baseline.disk_bytes, pepip_result.disk_bytes),
         ),
     ]
@@ -255,13 +263,15 @@ def _print_table(
         return f"  {text:<{width - 4}}  "
 
     def row_str(cells: tuple[str, ...]) -> str:
-        return "│" + "│".join(_cell(c, col_widths[i]) for i, c in enumerate(cells)) + "│"
+        return (
+            "│" + "│".join(_cell(c, col_widths[i]) for i, c in enumerate(cells)) + "│"
+        )
 
-    top_border    = "┌" + "┬".join("─" * w for w in col_widths) + "┐"
+    top_border = "┌" + "┬".join("─" * w for w in col_widths) + "┐"
     header_border = "├" + "┼".join("─" * w for w in col_widths) + "┤"
     bottom_border = "└" + "┴".join("─" * w for w in col_widths) + "┘"
-    title_line    = "│" + f"  {title}  ".center(inner_width) + "│"
-    title_sep     = "├" + "┬".join("─" * w for w in col_widths) + "┤"
+    title_line = "│" + f"  {title}  ".center(inner_width) + "│"
+    title_sep = "├" + "┬".join("─" * w for w in col_widths) + "┤"
 
     print()
     print(top_border)
@@ -278,15 +288,25 @@ def _print_table(
     latency_saved = baseline.elapsed_s - pepip_result.elapsed_s
     storage_saved = baseline.disk_bytes - pepip_result.disk_bytes
     if latency_saved > 0:
-        print(f"  ⏱  pepip saved {_fmt_seconds(latency_saved)} of install time across {n_projects} project(s).")
+        print(
+            f"  ⏱  pepip saved {_fmt_seconds(latency_saved)} of install time across {n_projects} project(s)."
+        )
     else:
-        print(f"  ⏱  pepip was {_fmt_seconds(-latency_saved)} slower than uv for {n_projects} project(s).")
-        print("     (Expected for n=1; savings grow with more projects sharing the same packages.)")
+        print(
+            f"  ⏱  pepip was {_fmt_seconds(-latency_saved)} slower than uv for {n_projects} project(s)."
+        )
+        print(
+            "     (Expected for n=1; savings grow with more projects sharing the same packages.)"
+        )
     if storage_saved > 0:
-        print(f"  💾  pepip saved {_fmt_bytes(storage_saved)} of disk space across {n_projects} project(s).")
+        print(
+            f"  💾  pepip saved {_fmt_bytes(storage_saved)} of disk space across {n_projects} project(s)."
+        )
     else:
         print(f"  💾  pepip used {_fmt_bytes(-storage_saved)} more disk space than uv.")
-        print("     (Expected for n=1; savings grow with more projects sharing the same packages.)")
+        print(
+            "     (Expected for n=1; savings grow with more projects sharing the same packages.)"
+        )
     print()
     print("  ★ = better result")
     print()
@@ -306,16 +326,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--projects",
         type=int,
-        default=3,
+        default=5,
         metavar="N",
-        help="Number of simulated projects (default: 3)",
+        help="Number of simulated projects (default: 5)",
     )
     parser.add_argument(
         "--packages",
         nargs="+",
-        default=["tomli", "packaging"],
+        default=["tomli", "packaging", "requests", "numpy", "pandas"],
         metavar="PKG",
-        help="Packages to install in each project (default: tomli packaging)",
+        help="Packages to install in each project (default: tomli packaging requests numpy pandas)",
     )
     parser.add_argument(
         "--no-cleanup",
@@ -347,7 +367,9 @@ def main(argv: list[str] | None = None) -> None:
             pp.mkdir(parents=True)
             pepip_projects.append(pp)
 
-        print(f"\nBenchmarking {args.projects} project(s) with packages: {' '.join(args.packages)}")
+        print(
+            f"\nBenchmarking {args.projects} project(s) with packages: {' '.join(args.packages)}"
+        )
         print("Running uv baseline  …", flush=True)
         baseline = _run_uv_baseline(baseline_projects, args.packages, uv)
 

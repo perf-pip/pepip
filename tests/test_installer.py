@@ -10,18 +10,10 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 
 import pepip.installer as installer
-from pepip.installer import (
-    GLOBAL_VENV,
-    _entries,
-    _python_in_venv,
-    _site_packages,
-    _uv_executable,
-    ensure_global_venv,
-    ensure_local_venv,
-    install,
-    link_packages,
-)
-
+from pepip.installer import (GLOBAL_VENV, _entries, _python_in_venv,
+                             _site_packages, _uv_executable,
+                             ensure_global_venv, ensure_local_venv, install,
+                             link_packages)
 
 # ---------------------------------------------------------------------------
 # _uv_executable
@@ -306,9 +298,7 @@ class TestInstall:
                         global_site if v == global_venv else local_site
                     )
                     with patch("subprocess.run", side_effect=fake_run):
-                        new_entries = install(
-                            packages=["numpy"], local_venv=local_venv
-                        )
+                        new_entries = install(packages=["numpy"], local_venv=local_venv)
 
         assert "numpy" in new_entries
         assert "numpy-2.0.dist-info" in new_entries
