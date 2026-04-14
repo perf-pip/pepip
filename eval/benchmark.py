@@ -57,6 +57,7 @@ Notes
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -121,6 +122,12 @@ def _pct_change(baseline: float, new: float) -> str:
     return f"{sign}{pct:.1f} %"
 
 
+def _run_id() -> str:
+    """Return a collision-resistant run id for benchmark work directories."""
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    return f"{stamp}-{os.getpid()}"
+
+
 # ---------------------------------------------------------------------------
 # Strategies
 # ---------------------------------------------------------------------------
@@ -157,7 +164,7 @@ def _run_uv_baseline(
             capture_output=True,
         )
     elapsed = time.perf_counter() - start
-    total_bytes = sum(_du(p) for p in projects)
+    total_bytes = sum(_du(p / ".venv") for p in projects)
     return EvalResult(label="uv (baseline)", elapsed_s=elapsed, disk_bytes=total_bytes)
 
 
@@ -200,8 +207,10 @@ def _run_pepip(
 
     elapsed = time.perf_counter() - start
 
-    # Disk: build venv + package store + all project venvs.
-    total_bytes = _du(state_root)
+    # Disk: count only virtual environment directories.
+    total_bytes = _du(state_root / "global-venv") + sum(
+        _du(project / ".venv") for project in projects
+    )
     return EvalResult(label="pepip", elapsed_s=elapsed, disk_bytes=total_bytes)
 
 
@@ -343,25 +352,34 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
+    if args.projects < 1:
+        raise SystemExit("--projects must be >= 1")
+
     uv = _uv()
 
-    with tempfile.TemporaryDirectory(prefix="pepip-eval-") as tmpdir_str:
-        tmpdir = Path(tmpdir_str)
-        baseline_root = tmpdir / "baseline"
-        pepip_root = tmpdir / "pepip"
+    # Keep benchmark work under a stable parent so repeated invocations in the
+    # same environment never collide with one another.
+    root_parent = Path(tempfile.gettempdir()) / "pepip-eval-runs"
+    root_parent.mkdir(parents=True, exist_ok=True)
+    run_root = root_parent / f"run-{_run_id()}"
+    run_root.mkdir(parents=True)
 
-        # Create separate project directories for each strategy.
-        baseline_projects = []
-        pepip_projects = []
-        for i in range(args.projects):
-            bp = baseline_root / f"project-{i}"
-            bp.mkdir(parents=True)
-            baseline_projects.append(bp)
+    baseline_root = run_root / "baseline"
+    pepip_root = run_root / "pepip"
 
-            pp = pepip_root / f"project-{i}"
-            pp.mkdir(parents=True)
-            pepip_projects.append(pp)
+    # Create separate project directories for each strategy.
+    baseline_projects = []
+    pepip_projects = []
+    for i in range(args.projects):
+        bp = baseline_root / f"project-{i}"
+        bp.mkdir(parents=True)
+        baseline_projects.append(bp)
 
+        pp = pepip_root / f"project-{i}"
+        pp.mkdir(parents=True)
+        pepip_projects.append(pp)
+
+    try:
         print(
             f"\nBenchmarking {args.projects} project(s) with packages: "
             f"{' '.join(args.packages)}"
@@ -375,12 +393,15 @@ def main(argv: list[str] | None = None) -> None:
         _print_table(args.projects, args.packages, baseline, pepip_result)
 
         if args.no_cleanup:
-            # Move out of the auto-deleted tempdir.
-            dest = Path("pepip-eval-results")
+            dest = Path("pepip-eval-results") / run_root.name
             if dest.exists():
                 shutil.rmtree(dest)
-            shutil.copytree(tmpdir_str, str(dest), symlinks=True)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(run_root, dest, symlinks=True)
             print(f"Results kept in: {dest.resolve()}")
+    finally:
+        if not args.no_cleanup and run_root.exists():
+            shutil.rmtree(run_root)
 
 
 if __name__ == "__main__":

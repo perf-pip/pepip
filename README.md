@@ -13,6 +13,16 @@ convert assets/archive/banner.png -resize 900 assets/cover.jpg
 
 Built for package-heavy Python workflows, `pepip` is especially useful for AI/ML projects that repeatedly create envs for model prototyping, training, and inference.
 
+[![PyPI](https://img.shields.io/pypi/v/pepip?style=for-the-badge&logo=pypi&logoColor=white)](https://pypi.org/project/pepip/)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/pepip?period=total&units=NONE&left_color=BLACK&right_color=YELLOW&left_text=Downloads)](https://pepy.tech/projects/pepip)
+[![Website](https://img.shields.io/badge/Website-000000?style=for-the-badge&logo=github&logoColor=white)](https://perf-pip.github.io/)
+<!-- [![YouTube](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com) -->
+<!-- [![Medium](https://img.shields.io/badge/Medium-12100E?style=for-the-badge&logo=medium&logoColor=white)](https://medium.com/) -->
+
+[![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=ffdd54)]()
+[![AI](https://img.shields.io/badge/AI-C21B00?style=for-the-badge&logo=openaigym&logoColor=white)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/perf-pip/pepip/blob/main/LICENSE.md)
+
 ---
 
 ## 🤔 The Problem
@@ -38,6 +48,22 @@ project-a/.venv/  →  numpy 1.0 (symlink)  torch 2.4 (symlink) → ~bytes
 project-b/.venv/  →  numpy 2.0 (symlink)  torch 2.4 (symlink) → ~bytes
 project-c/.venv/  →  numpy 2.0 (symlink)  torch 2.5 (symlink) → ~bytes
 ```
+
+## 🔍 Comparison
+
+| Feature                              | uv / pip | conda | pepip |
+|--------------------------------------|----------|-------|-------|
+| **Shared package store**             |    ❌    |  ✅   |  ✅   |
+| **Disk usage (multi-project)**       |    🔴    |  🟢   |  🟢   |
+| **Install speed (repeat packages)**  |    🟡    |  🟡   |  🟢   |
+| **Virtual env compatibility**        |    ✅    |  ❌   |  ✅   |
+| **Multiple versions for each env**   |    ✅    |  ❌   |  ✅   |
+| **Tool installation size**           |    🟢    |  🔴   |  🟢   |
+
+Key differences:
+- **Speed and download size**: While uv and conda cache helps, they still copy packages. If cache is cleared, they redownload. pepip only downloads once per version, then symlinks for every project, allowing instant installs for subsequent projects.
+
+As pepip is based on uv, it has same advantages as uv, without the repeated download and storage cost.
 
 ---
 
