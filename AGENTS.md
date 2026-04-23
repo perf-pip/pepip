@@ -52,6 +52,13 @@ Given `pepip install ...`:
 - Runtime dependency: `uv>=0.11.0`.
 - Test framework: `pytest`.
 - Linting configured with Ruff rules `E`, `F`, `W`.
+- Supported OS targets: Linux, macOS, and Windows.
+
+### Cross-platform compatibility notes
+
+- Keep path handling platform-aware (`pathlib`, `sys.platform`) and avoid hardcoding POSIX-only assumptions.
+- The package store is interpreter/ABI/platform scoped so incompatible binaries are not mixed across OSes.
+- On Windows, symlink creation may require Developer Mode or elevated permissions; preserve clear error propagation for symlink failures.
 
 ## 5) Important Paths and Environment Variables
 

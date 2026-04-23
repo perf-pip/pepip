@@ -77,6 +77,14 @@ pip install pepip
 
 On Windows, creating symlinks typically requires Developer Mode or an elevated shell. `pepip` now raises a clear error if the OS blocks symlink creation.
 
+### Platform compatibility
+[![Windows](https://custom-icon-badges.demolab.com/badge/Windows-0078D6?logo=windows11&logoColor=white)]()
+[![macOS](https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white)]()
+[![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)]()
+
+- `pepip` supports Linux, macOS, and Windows.
+- Shared-store reuse works across projects on the same machine/OS, while each OS keeps its own compatible store layout.
+
 ---
 
 ## 📦 Usage
