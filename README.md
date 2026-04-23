@@ -73,7 +73,9 @@ As pepip is based on uv, it has same advantages as uv, without the repeated down
 pip install pepip
 ```
 
-**Requirements:** Python 3.8+ · [`uv`](https://github.com/astral-sh/uv) (auto-installed)
+**Requirements:** Python 3.8+ · [`uv`](https://github.com/astral-sh/uv) (auto-installed) · Linux / macOS / Windows
+
+On Windows, creating symlinks typically requires Developer Mode or an elevated shell. `pepip` now raises a clear error if the OS blocks symlink creation.
 
 ---
 
@@ -98,7 +100,14 @@ pepip install numpy --venv /path/to/my-env
 Then activate and use your `.venv` exactly as you normally would:
 
 ```bash
+# macOS / Linux
 source .venv/bin/activate
+python -c "import numpy; print(numpy.__version__)"
+```
+
+```powershell
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
 python -c "import numpy; print(numpy.__version__)"
 ```
 

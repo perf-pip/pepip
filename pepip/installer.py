@@ -72,7 +72,8 @@ def _uv_executable() -> str:
 
     # 1. Same directory as the current Python interpreter (common when uv is
     #    installed inside a venv via ``pip install uv``).
-    candidate = Path(sys.executable).parent / "uv"
+    candidate_name = "uv.exe" if sys.platform == "win32" else "uv"
+    candidate = Path(sys.executable).parent / candidate_name
     if candidate.is_file():
         return str(candidate)
 
@@ -86,6 +87,12 @@ def _uv_executable() -> str:
         "Install it with:  pip install uv  or  "
         "curl -LsSf https://astral.sh/uv/install.sh | sh"
     )
+
+
+def _create_symlink(link_path: Path, target_path: Path) -> None:
+    """Create *link_path* pointing at *target_path* with Windows dir support."""
+    target_is_directory = target_path.is_dir() and not target_path.is_symlink()
+    link_path.symlink_to(target_path, target_is_directory=target_is_directory)
 
 
 def _python_in_venv(venv: Path) -> Path:
@@ -160,7 +167,10 @@ def _package_store_root(python: Path | None = None) -> Path:
         cache_tag = sys.implementation.cache_tag or (
             f"py{sys.version_info.major}{sys.version_info.minor}"
         )
-        machine = platform.machine() or "unknown"
+        try:
+            machine = platform.machine() or "unknown"
+        except Exception:  # noqa: BLE001
+            machine = "unknown"
         scope = f"{cache_tag}-{sys.platform}-{machine}"
 
     safe_scope = re.sub(r"[^A-Za-z0-9_.-]+", "_", scope)
@@ -379,8 +389,12 @@ def link_packages(global_site: Path, local_site: Path, entries: set[str]) -> Non
     entries:
         Names of entries (directories / files) inside *global_site* to link.
     """
-    local_site.mkdir(parents=True, exist_ok=True)
-    for name in entries:
+    try:
+        local_site.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError(f"Failed to prepare local site-packages at {local_site}") from exc
+
+    for name in sorted(entries):
         global_entry = global_site / name
         local_entry = local_site / name
 
@@ -392,12 +406,22 @@ def link_packages(global_site: Path, local_site: Path, entries: set[str]) -> Non
                 # Already correct — nothing to do.
                 continue
             # Outdated or broken symlink — replace.
-            local_entry.unlink()
+            try:
+                local_entry.unlink()
+            except OSError as exc:
+                raise RuntimeError(
+                    f"Failed to replace existing symlink at {local_entry}"
+                ) from exc
         elif local_entry.exists():
             # A real file/directory exists here — do not overwrite it.
             continue
 
-        local_entry.symlink_to(global_entry)
+        try:
+            _create_symlink(local_entry, global_entry)
+        except OSError as exc:
+            raise RuntimeError(
+                f"Failed to create symlink from {local_entry} to {global_entry}"
+            ) from exc
 
 
 def install(

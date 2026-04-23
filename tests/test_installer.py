@@ -9,9 +9,29 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import pepip.installer as installer
-from pepip.installer import (_entries, _python_in_venv, _site_packages,
-                             _uv_executable, ensure_global_venv,
-                             ensure_local_venv, install, link_packages)
+from pepip.installer import (
+    _create_symlink,
+    _entries,
+    _python_in_venv,
+    _site_packages,
+    _uv_executable,
+    ensure_global_venv,
+    ensure_local_venv,
+    install,
+    link_packages,
+)
+
+
+def _symlinks_supported(tmp_path: Path) -> bool:
+    probe_target = tmp_path / "symlink-target"
+    probe_target.mkdir()
+    probe_link = tmp_path / "symlink-link"
+    try:
+        _create_symlink(probe_link, probe_target)
+    except OSError:
+        return False
+    probe_link.unlink()
+    return True
 
 # ---------------------------------------------------------------------------
 # _uv_executable
@@ -20,13 +40,13 @@ from pepip.installer import (_entries, _python_in_venv, _site_packages,
 
 class TestUvExecutable:
     def test_finds_uv_next_to_python(self, tmp_path):
-        fake_uv = tmp_path / "uv"
+        fake_uv = tmp_path / ("uv.exe" if sys.platform == "win32" else "uv")
         fake_uv.touch()
         fake_uv.chmod(0o755)
         with patch.object(Path, "is_file", return_value=True):
             with patch("sys.executable", str(tmp_path / "python")):
                 result = _uv_executable()
-        assert result.endswith("uv")
+        assert result == str(fake_uv)
 
     def test_finds_uv_on_path(self, tmp_path):
         fake_uv = tmp_path / "uv"
@@ -34,6 +54,15 @@ class TestUvExecutable:
         with patch.object(Path, "is_file", return_value=False):
             with patch("shutil.which", return_value=str(fake_uv)):
                 result = _uv_executable()
+        assert result == str(fake_uv)
+
+    def test_finds_windows_uv_next_to_python(self, tmp_path):
+        fake_uv = tmp_path / "uv.exe"
+        fake_uv.touch()
+        with patch("sys.platform", "win32"):
+            with patch.object(Path, "is_file", return_value=True):
+                with patch("sys.executable", str(tmp_path / "python.exe")):
+                    result = _uv_executable()
         assert result == str(fake_uv)
 
     def test_raises_when_not_found(self):
@@ -68,10 +97,10 @@ class TestPythonInVenv:
 
 class TestSitePackages:
     def test_uses_venv_python_when_available(self, tmp_path):
-        fake_python = tmp_path / "bin" / "python"
+        fake_python = _python_in_venv(tmp_path)
         fake_python.parent.mkdir(parents=True)
         fake_python.touch()
-        expected = "/some/path/site-packages"
+        expected = str(tmp_path / "resolved-site-packages")
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout=expected + "\n")
             result = _site_packages(tmp_path)
@@ -158,6 +187,9 @@ class TestEnsureLocalVenv:
 
 class TestLinkPackages:
     def test_creates_symlinks_for_new_entries(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
         global_site = tmp_path / "global" / "site-packages"
         global_site.mkdir(parents=True)
         local_site = tmp_path / "local" / "site-packages"
@@ -176,6 +208,9 @@ class TestLinkPackages:
         assert (local_site / "numpy-1.24.dist-info").is_symlink()
 
     def test_replaces_outdated_symlink(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
         global_site = tmp_path / "global" / "site-packages"
         global_site.mkdir(parents=True)
         local_site = tmp_path / "local" / "site-packages"
@@ -194,6 +229,9 @@ class TestLinkPackages:
         assert (local_site / "numpy").resolve() == pkg_dir.resolve()
 
     def test_leaves_correct_symlink_unchanged(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
         global_site = tmp_path / "global" / "site-packages"
         global_site.mkdir(parents=True)
         local_site = tmp_path / "local" / "site-packages"
@@ -240,6 +278,9 @@ class TestLinkPackages:
         assert not (local_site / "ghost_package").exists()
 
     def test_creates_local_site_if_missing(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
         global_site = tmp_path / "global" / "site-packages"
         global_site.mkdir(parents=True)
         local_site = tmp_path / "local" / "site-packages"
@@ -253,6 +294,78 @@ class TestLinkPackages:
         assert local_site.is_dir()
         assert (local_site / "numpy").is_symlink()
 
+    def test_raises_when_local_site_creation_fails(self, tmp_path):
+        global_site = tmp_path / "global" / "site-packages"
+        global_site.mkdir(parents=True)
+        local_site = tmp_path / "local" / "site-packages"
+
+        with patch.object(Path, "mkdir", side_effect=PermissionError("denied")):
+            with pytest.raises(
+                RuntimeError, match="Failed to prepare local site-packages"
+            ):
+                link_packages(global_site, local_site, {"numpy"})
+
+    def test_raises_when_replacing_symlink_fails(self, tmp_path):
+        global_site = tmp_path / "global" / "site-packages"
+        global_site.mkdir(parents=True)
+        local_site = tmp_path / "local" / "site-packages"
+        local_site.mkdir(parents=True)
+
+        pkg_dir = global_site / "numpy"
+        pkg_dir.mkdir()
+
+        other = tmp_path / "other"
+        other.mkdir()
+        local_entry = local_site / "numpy"
+        local_entry.symlink_to(other)
+
+        with patch.object(Path, "unlink", side_effect=PermissionError("denied")):
+            with pytest.raises(
+                RuntimeError, match="Failed to replace existing symlink"
+            ):
+                link_packages(global_site, local_site, {"numpy"})
+
+    def test_raises_when_symlink_creation_fails(self, tmp_path):
+        global_site = tmp_path / "global" / "site-packages"
+        global_site.mkdir(parents=True)
+        local_site = tmp_path / "local" / "site-packages"
+        local_site.mkdir(parents=True)
+
+        pkg_dir = global_site / "numpy"
+        pkg_dir.mkdir()
+
+        with patch(
+            "pepip.installer._create_symlink", side_effect=OSError("unsupported")
+        ):
+            with pytest.raises(
+                RuntimeError, match="Failed to create symlink"
+            ):
+                link_packages(global_site, local_site, {"numpy"})
+
+    def test_passes_directory_flag_when_creating_directory_symlink(self, tmp_path):
+        link_path = tmp_path / "link"
+        target_path = tmp_path / "target"
+        target_path.mkdir()
+
+        with patch.object(Path, "symlink_to", autospec=True) as mock_symlink_to:
+            _create_symlink(link_path, target_path)
+
+        mock_symlink_to.assert_called_once_with(
+            link_path, target_path, target_is_directory=True
+        )
+
+    def test_passes_file_flag_when_creating_file_symlink(self, tmp_path):
+        link_path = tmp_path / "link.py"
+        target_path = tmp_path / "target.py"
+        target_path.write_text("")
+
+        with patch.object(Path, "symlink_to", autospec=True) as mock_symlink_to:
+            _create_symlink(link_path, target_path)
+
+        mock_symlink_to.assert_called_once_with(
+            link_path, target_path, target_is_directory=False
+        )
+
 
 # ---------------------------------------------------------------------------
 # install (integration-style with subprocess mocked)
@@ -261,8 +374,7 @@ class TestLinkPackages:
 
 class TestInstall:
     def _make_global_site(self, tmp_path: Path) -> Path:
-        py_tag = f"python{sys.version_info.major}.{sys.version_info.minor}"
-        site = tmp_path / "global-venv" / "lib" / py_tag / "site-packages"
+        site = _site_packages(tmp_path / "global-venv")
         site.mkdir(parents=True)
         return site
 
@@ -297,15 +409,17 @@ class TestInstall:
             install(local_venv=tmp_path / ".venv")
 
     def test_install_creates_symlinks(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
         global_venv = tmp_path / "global-venv"
         global_venv.mkdir()
-        py_tag = f"python{sys.version_info.major}.{sys.version_info.minor}"
-        global_site = global_venv / "lib" / py_tag / "site-packages"
+        global_site = _site_packages(global_venv)
         global_site.mkdir(parents=True)
 
         local_venv = tmp_path / ".venv"
         local_venv.mkdir()
-        local_site = local_venv / "lib" / py_tag / "site-packages"
+        local_site = _site_packages(local_venv)
         local_site.mkdir(parents=True)
 
         def fake_run(cmd, **kwargs):
@@ -331,8 +445,7 @@ class TestInstall:
     def test_install_calls_uv_with_requirements_file(self, tmp_path):
         global_venv = tmp_path / "global-venv"
         global_venv.mkdir()
-        py_tag = f"python{sys.version_info.major}.{sys.version_info.minor}"
-        global_site = global_venv / "lib" / py_tag / "site-packages"
+        global_site = _site_packages(global_venv)
         global_site.mkdir(parents=True)
 
         local_venv = tmp_path / ".venv"
@@ -364,16 +477,18 @@ class TestInstall:
         assert "--target" in install_call
 
     def test_different_projects_keep_different_package_versions(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
         global_venv = tmp_path / "pepip-home" / "global-venv"
         global_venv.mkdir(parents=True)
-        py_tag = f"python{sys.version_info.major}.{sys.version_info.minor}"
 
         project_a_venv = tmp_path / "project-a" / ".venv"
-        project_a_site = project_a_venv / "lib" / py_tag / "site-packages"
+        project_a_site = _site_packages(project_a_venv)
         project_a_site.mkdir(parents=True)
 
         project_b_venv = tmp_path / "project-b" / ".venv"
-        project_b_site = project_b_venv / "lib" / py_tag / "site-packages"
+        project_b_site = _site_packages(project_b_venv)
         project_b_site.mkdir(parents=True)
 
         def fake_run(cmd, **kwargs):
@@ -414,12 +529,14 @@ class TestInstall:
         assert (project_b_site / "requests-2.26.0.dist-info").is_symlink()
 
     def test_reinstalling_project_replaces_stale_version_metadata(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
         global_venv = tmp_path / "pepip-home" / "global-venv"
         global_venv.mkdir(parents=True)
-        py_tag = f"python{sys.version_info.major}.{sys.version_info.minor}"
 
         local_venv = tmp_path / ".venv"
-        local_site = local_venv / "lib" / py_tag / "site-packages"
+        local_site = _site_packages(local_venv)
         local_site.mkdir(parents=True)
 
         def fake_run(cmd, **kwargs):

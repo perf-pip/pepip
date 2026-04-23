@@ -1,6 +1,7 @@
 # Custom files
 archive*
 TODO*.md
+.codex
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
