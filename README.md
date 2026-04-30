@@ -194,11 +194,8 @@ python eval/benchmark.py --no-cleanup
 
 | Metric | uv (baseline) | pepip | Improvement |
 |---|---|---|---|
-| ⏱ Latency | 0.56 s | **0.33 s** ★ | −41.3 % |
-| 💾 Disk usage | 475.19 MB | **95.22 MB** ★ | −80.0 % |
-
-> ⏱ pepip saved **0.23 s** of install time across 5 projects.
-> 💾 pepip saved **379.97 MB** of disk space across 5 projects.
+| ⏱ Latency | 0.56 s | **0.33 s** ★ | 0.23s | −41.3 % |
+| 💾 Disk usage | 475.19 MB | **95.22 MB** | 379.97 MB|| −80.0 % |
 
 ### Why the savings get better over time
 
