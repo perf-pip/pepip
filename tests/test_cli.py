@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
@@ -82,3 +83,36 @@ class TestCLIInstall:
         captured = capsys.readouterr()
         assert "2 entries" in captured.out
         assert rc == 0
+
+
+class TestCLIVenv:
+    def test_venv_proxies_to_uv_venv(self):
+        with patch("pepip.cli._uv_executable", return_value="uv"):
+            with patch("pepip.cli.subprocess.run") as mock_run:
+                mock_run.return_value = MagicMock(returncode=0)
+                rc = main(["venv", ".venv", "--python", "3.12"])
+
+        assert rc == 0
+        mock_run.assert_called_once_with(
+            ["uv", "venv", ".venv", "--python", "3.12"],
+            check=True,
+        )
+
+    def test_venv_file_not_found_error(self, capsys):
+        with patch(
+            "pepip.cli._uv_executable", side_effect=FileNotFoundError("uv not found")
+        ):
+            rc = main(["venv"])
+        assert rc == 1
+        captured = capsys.readouterr()
+        assert "uv not found" in captured.err
+
+    def test_venv_generic_error(self, capsys):
+        with patch("pepip.cli._uv_executable", return_value="uv"):
+            with patch(
+                "pepip.cli.subprocess.run", side_effect=RuntimeError("venv failed")
+            ):
+                rc = main(["venv"])
+        assert rc == 1
+        captured = capsys.readouterr()
+        assert "venv failed" in captured.err

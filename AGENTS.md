@@ -1,12 +1,9 @@
 # AGENTS.md
 
-This file is a fast, structured guide for AI agents working in this repository.
-It describes the project intent, code map, invariants, workflows, and safe edit
-patterns.
-
 ## 1) Project Purpose
 
-`pepip` is a Python CLI tool that reuses dependencies across projects.
+The current directory has the source code of `pepip` project.
+`pepip` is a Python CLI tool that reuses dependencies across projects. It uses "uv" under the hood.
 
 - It installs resolved package versions once into an immutable shared store.
 - It creates per-project virtual environments that symlink package entries from

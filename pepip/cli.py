@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+import subprocess
 
-from pepip.installer import PEPIP_HOME, install
+from pepip.installer import PEPIP_HOME, _uv_executable, install
 
 
 def _build_parser():
@@ -55,6 +56,19 @@ def _build_parser():
         help="Path to the project-local virtual environment (default: .venv)",
     )
 
+    # --- venv --------------------------------------------------------------
+    venv_parser = subparsers.add_parser(
+        "venv",
+        help="Proxy to 'uv venv' (creates/manages virtual environments)",
+        description="Pass through arguments directly to 'uv venv'.",
+    )
+    venv_parser.add_argument(
+        "uv_venv_args",
+        nargs="*",
+        metavar="ARG",
+        help="Arguments forwarded to 'uv venv' (example: .venv --python 3.12)",
+    )
+
     return parser
 
 
@@ -72,9 +86,11 @@ def main(argv=None) -> int:
         Exit code (0 on success, non-zero on failure).
     """
     parser = _build_parser()
-    args = parser.parse_args(argv)
+    args, unknown_args = parser.parse_known_args(argv)
 
     if args.command == "install":
+        if unknown_args:
+            parser.error(f"unrecognized arguments: {' '.join(unknown_args)}")
         if not args.packages and not args.requirements:
             _build_parser().parse_args(["install", "--help"], namespace=None)
             # parse_args above will raise SystemExit via --help; this line is
@@ -99,6 +115,20 @@ def main(argv=None) -> int:
             f"Successfully installed and linked {len(linked_entries)} "
             f"{pkg_word} into '{args.venv}'."
         )
+        return 0
+    if args.command == "venv":
+        try:
+            uv = _uv_executable()
+            subprocess.run(
+                [uv, "venv", *args.uv_venv_args, *unknown_args],
+                check=True,
+            )
+        except FileNotFoundError as exc:
+            print(f"pepip: error: {exc}", file=sys.stderr)
+            return 1
+        except Exception as exc:  # noqa: BLE001
+            print(f"pepip: error: {exc}", file=sys.stderr)
+            return 1
         return 0
 
     parser.print_help()

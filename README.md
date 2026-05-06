@@ -72,6 +72,11 @@ As pepip is based on uv, it has same advantages as uv, without the repeated down
 ```bash
 pip install pepip
 ```
+or using `uv`:
+
+```bash
+uvx pepip
+```
 
 **Requirements:** Python 3.8+ · [`uv`](https://github.com/astral-sh/uv) (auto-installed) · Linux / macOS / Windows
 
@@ -105,6 +110,11 @@ pepip install -r requirements.txt
 pepip install numpy --venv /path/to/my-env
 ```
 
+or
+```bash
+uvx pepip install numpy pandas
+```
+
 Then activate and use your `.venv` exactly as you normally would:
 
 ```bash
@@ -118,6 +128,10 @@ python -c "import numpy; print(numpy.__version__)"
 .venv\Scripts\Activate.ps1
 python -c "import numpy; print(numpy.__version__)"
 ```
+
+`pepip` is compatible with existing `uv` environments. If a target venv already
+exists (for example created with `uv venv`), `pepip install --venv <path>`
+reuses it and links packages into that environment.
 
 ### Usage using "uv"
 ```bash

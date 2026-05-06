@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -442,6 +443,42 @@ class TestInstall:
         assert (local_site / "numpy").is_symlink()
         assert (local_site / "numpy-2.0.dist-info").is_symlink()
 
+    def test_install_links_resolved_dependencies(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
+        global_venv = tmp_path / "global-venv"
+        global_venv.mkdir()
+
+        local_venv = tmp_path / ".venv"
+        local_site = _site_packages(local_venv)
+        local_site.mkdir(parents=True)
+
+        def fake_run(cmd, **kwargs):
+            if "install" in cmd:
+                target = Path(cmd[cmd.index("--target") + 1])
+                self._write_fake_dist(
+                    target,
+                    "agent-action-guard",
+                    "1.1.4",
+                    module_name="agent_action_guard",
+                )
+                self._write_fake_dist(target, "numpy", "2.4.4")
+            return MagicMock(returncode=0)
+
+        with patch.object(installer, "GLOBAL_VENV", global_venv):
+            with patch("pepip.installer._uv_executable", return_value="uv"):
+                with patch("pepip.installer._site_packages", return_value=local_site):
+                    with patch("subprocess.run", side_effect=fake_run):
+                        linked_entries = install(
+                            packages=["agent-action-guard"], local_venv=local_venv
+                        )
+
+        assert "agent_action_guard" in linked_entries
+        assert "numpy" in linked_entries
+        assert (local_site / "agent_action_guard").is_symlink()
+        assert (local_site / "numpy").is_symlink()
+
     def test_install_calls_uv_with_requirements_file(self, tmp_path):
         global_venv = tmp_path / "global-venv"
         global_venv.mkdir()
@@ -475,6 +512,80 @@ class TestInstall:
         assert "-r" in install_call
         assert str(req_file) in install_call
         assert "--target" in install_call
+
+    def test_install_reuses_existing_uv_environment(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
+        global_venv = tmp_path / "global-venv"
+        global_venv.mkdir()
+
+        local_venv = tmp_path / ".venv"
+        local_venv.mkdir()
+        local_site = _site_packages(local_venv)
+        local_site.mkdir(parents=True)
+
+        run_calls = []
+
+        def fake_run(cmd, **kwargs):
+            run_calls.append(cmd)
+            if "install" in cmd:
+                target = Path(cmd[cmd.index("--target") + 1])
+                self._write_fake_dist(target, "requests", "2.26.0")
+            return MagicMock(returncode=0)
+
+        with patch.object(installer, "GLOBAL_VENV", global_venv):
+            with patch("pepip.installer._uv_executable", return_value="uv"):
+                with patch("pepip.installer._site_packages", return_value=local_site):
+                    with patch("subprocess.run", side_effect=fake_run):
+                        linked_entries = install(
+                            packages=["requests"],
+                            local_venv=local_venv,
+                        )
+
+        assert "requests" in linked_entries
+        assert (local_site / "requests").is_symlink()
+        assert ["uv", "venv", str(local_venv)] not in run_calls
+
+    def test_install_in_existing_uv_environment_is_importable(self, tmp_path):
+        if not _symlinks_supported(tmp_path):
+            pytest.skip("symlinks are not available in this environment")
+
+        global_venv = tmp_path / "global-venv"
+        global_venv.mkdir()
+
+        local_venv = tmp_path / ".venv"
+        local_venv.mkdir()
+        local_site = _site_packages(local_venv)
+        local_site.mkdir(parents=True)
+
+        def fake_run(cmd, **kwargs):
+            if "install" in cmd:
+                target = Path(cmd[cmd.index("--target") + 1])
+                self._write_fake_dist(target, "requests", "2.26.0")
+            return MagicMock(returncode=0)
+
+        with patch.object(installer, "GLOBAL_VENV", global_venv):
+            with patch("pepip.installer._uv_executable", return_value="uv"):
+                with patch("pepip.installer._site_packages", return_value=local_site):
+                    with patch("subprocess.run", side_effect=fake_run):
+                        install(
+                            packages=["requests"],
+                            local_venv=local_venv,
+                        )
+
+        import_check = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import requests; print(requests.__version__)",
+            ],
+            capture_output=True,
+            text=True,
+            env={"PYTHONPATH": str(local_site)},
+            check=True,
+        )
+        assert import_check.stdout.strip() == "2.26.0"
 
     def test_different_projects_keep_different_package_versions(self, tmp_path):
         if not _symlinks_supported(tmp_path):
