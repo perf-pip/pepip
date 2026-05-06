@@ -156,6 +156,49 @@ def test_install_reuses_existing_uv_environment(tmp_path: Path) -> None:
     assert ["uv", "venv", str(local_venv)] not in run_calls
 
 
+def test_install_prefers_existing_local_venv_python_for_resolution(
+    tmp_path: Path,
+) -> None:
+    if not symlinks_supported(tmp_path):
+        pytest.skip("symlinks are not available in this environment")
+
+    global_venv = tmp_path / "global-venv"
+    global_venv.mkdir()
+
+    local_venv = tmp_path / ".venv"
+    local_venv.mkdir()
+    local_site = _site_packages(local_venv)
+    local_site.mkdir(parents=True)
+
+    local_python = installer._python_in_venv(local_venv)
+    local_python.parent.mkdir(parents=True, exist_ok=True)
+    local_python.touch()
+
+    global_python = installer._python_in_venv(global_venv)
+    global_python.parent.mkdir(parents=True, exist_ok=True)
+    global_python.touch()
+
+    run_calls = []
+
+    def fake_run(cmd, **kwargs):
+        run_calls.append(cmd)
+        if "install" in cmd:
+            target = Path(cmd[cmd.index("--target") + 1])
+            write_fake_dist(target, "numpy", "2.0")
+        return MagicMock(returncode=0, stdout="cpython-310-linux-x86_64\n")
+
+    with patch.object(installer, "GLOBAL_VENV", global_venv):
+        with patch("pepip.installer._uv_executable", return_value="uv"):
+            with patch("pepip.installer._site_packages", return_value=local_site):
+                with patch("subprocess.run", side_effect=fake_run):
+                    install(packages=["numpy"], local_venv=local_venv)
+
+    install_call = next(c for c in run_calls if "install" in c)
+    python_arg = install_call[install_call.index("--python") + 1]
+    assert Path(python_arg) == local_python
+    assert Path(python_arg) != global_python
+
+
 def test_install_in_existing_uv_environment_is_importable(tmp_path: Path) -> None:
     if not symlinks_supported(tmp_path):
         pytest.skip("symlinks are not available in this environment")

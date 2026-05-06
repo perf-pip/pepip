@@ -3,6 +3,7 @@ archive*
 TODO*.md
 .codex
 .benchmarks/
+uv.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

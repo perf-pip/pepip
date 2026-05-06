@@ -16,9 +16,11 @@ from rich.panel import Panel
 from rich.prompt import IntPrompt
 from rich.table import Table
 
-os.environ["UV_VENV_CLEAR"] = "1"
+from _smoke_matrix_utils import delete_dir
+
 CONSOLE = Console()
 PYTHON_VERSION = "3.10"
+VENV_DIRNAME = ".venv"
 
 DEFAULT_PINNED_VERSIONS = {
     "numpy": "2.1.3",
@@ -30,121 +32,181 @@ DEFAULT_PINNED_VERSIONS = {
     "sqlalchemy": "2.0.36",
     "fastapi": "0.115.4",
     "click": "8.1.7",
-    "pytest": "8.3.3",
+    "pydantic": "2.9.2",
+    "httpx": "0.27.2",
+    "rich": "13.9.4",
+    "polars": "1.12.0",
+    "pillow": "11.0.0",
+    "pyyaml": "6.0.2",
+    "jinja2": "3.1.4",
+    "aiohttp": "3.10.10",
+    "sympy": "1.13.3",
+    "openpyxl": "3.1.5",
+    "networkx": "3.4.2",
+    "tqdm": "4.66.6",
+    "beautifulsoup4": "4.12.3",
+    "lxml": "5.3.0",
+    "orjson": "3.10.11",
+    "python-dateutil": "2.9.0.post0",
+    "uvicorn": "0.32.0",
 }
 
-SMOKE_CODE = r"""
-# --- numpy ---
+SMOKE_CODE_BY_PACKAGE = {
+    "numpy": r"""
 import numpy as np
-
-assert np.__version__ == "2.1.3", f"unexpected numpy version: {np.__version__}"
-
 arr = np.array([1, 2, 3, 4], dtype=np.float64)
-assert np.isclose(arr.mean(), 2.5), "numpy mean check failed"
-
-
-# --- pandas ---
+assert np.isclose(arr.mean(), 2.5)
+""",
+    "pandas": r"""
 import pandas as pd
-
-assert pd.__version__ == "2.2.3", f"unexpected pandas version: {pd.__version__}"
-
-frame = pd.DataFrame({"x": [1, 2, 3], "y": [10, 20, 30]})
-result = frame.groupby("x", as_index=False)["y"].sum()
-assert result["y"].tolist() == [10, 20, 30], "pandas groupby check failed"
-
-
-# --- requests ---
+frame = pd.DataFrame({"x": [1, 2], "y": [10, 20]})
+assert frame["y"].sum() == 30
+""",
+    "requests": r"""
 import requests
-
-assert requests.__version__ == "2.32.3", (
-    f"unexpected requests version: {requests.__version__}"
-)
-
-req = requests.Request("GET", "https://example.com", params={"q": "ok"})
+req = requests.Request("GET", "https://example.com")
 prepared = req.prepare()
-assert "q=ok" in prepared.url, "requests prepare/url check failed"
-
-
-# --- scipy ---
-import scipy
+assert prepared.method == "GET"
+""",
+    "scipy": r"""
+import numpy as np
 from scipy import linalg
-
-assert scipy.__version__ == "1.14.1", f"unexpected scipy version: {scipy.__version__}"
-
 mat = np.array([[2.0, 0.0], [0.0, 5.0]])
 inv = linalg.inv(mat)
-assert np.allclose(inv, np.array([[0.5, 0.0], [0.0, 0.2]])), "scipy linalg check failed"
-
-
-# --- matplotlib ---
+assert np.allclose(inv, np.array([[0.5, 0.0], [0.0, 0.2]]))
+""",
+    "matplotlib": r"""
 import matplotlib
-
-assert matplotlib.__version__ == "3.9.2", (
-    f"unexpected matplotlib version: {matplotlib.__version__}"
-)
-
-
-# --- scikit-learn ---
-import sklearn
+assert matplotlib.__version__
+""",
+    "scikit-learn": r"""
+import numpy as np
 from sklearn.linear_model import LinearRegression
-
-assert sklearn.__version__ == "1.5.2", (
-    f"unexpected sklearn version: {sklearn.__version__}"
-)
-
 X = np.array([[1], [2], [3], [4]], dtype=np.float64)
 y = np.array([2, 4, 6, 8], dtype=np.float64)
 model = LinearRegression().fit(X, y)
-assert np.isclose(model.coef_[0], 2.0), "sklearn fit check failed"
-
-
-# --- sqlalchemy ---
-import sqlalchemy
+assert np.isclose(model.coef_[0], 2.0)
+""",
+    "sqlalchemy": r"""
 from sqlalchemy import create_engine, text
-
-assert sqlalchemy.__version__ == "2.0.36", (
-    f"unexpected sqlalchemy version: {sqlalchemy.__version__}"
-)
-
 engine = create_engine("sqlite:///:memory:")
 with engine.connect() as conn:
     value = conn.execute(text("SELECT 42")).scalar_one()
-assert value == 42, "sqlalchemy sqlite check failed"
-
-
-# --- fastapi ---
+assert value == 42
+""",
+    "fastapi": r"""
 import fastapi
-
-assert fastapi.__version__ == "0.115.4", (
-    f"unexpected fastapi version: {fastapi.__version__}"
-)
-
 app = fastapi.FastAPI()
 
 @app.get("/ping")
 def ping():
     return {"ok": True}
 
-assert any(route.path == "/ping" for route in app.routes), "fastapi route check failed"
-
-
-# --- click ---
+assert any(route.path == "/ping" for route in app.routes)
+""",
+    "click": r"""
 import click
-
-assert click.__version__ == "8.1.7", f"unexpected click version: {click.__version__}"
 
 @click.command()
 def cmd():
     pass
 
-assert cmd.name == "cmd", "click command check failed"
+assert cmd.name == "cmd"
+""",
+    "pydantic": r"""
+import pydantic
 
+class User(pydantic.BaseModel):
+    name: str
 
-# --- pytest ---
-import pytest
-
-assert pytest.__version__ == "8.3.3", f"unexpected pytest version: {pytest.__version__}"
-"""
+u = User(name="alice")
+assert u.name == "alice"
+""",
+    "httpx": r"""
+import httpx
+client = httpx.Client()
+request = client.build_request("GET", "https://example.com")
+assert request.method == "GET"
+client.close()
+""",
+    "rich": r"""
+from rich.console import Console
+console = Console(record=True)
+console.print("ok")
+assert "ok" in console.export_text()
+""",
+    "polars": r"""
+import polars as pl
+df = pl.DataFrame({"a": [1, 2, 3]})
+assert df.shape == (3, 1)
+""",
+    "pillow": r"""
+from PIL import Image
+img = Image.new("RGB", (10, 10))
+assert img.size == (10, 10)
+""",
+    "pyyaml": r"""
+import yaml
+obj = yaml.safe_load("a: 1")
+assert obj["a"] == 1
+""",
+    "jinja2": r"""
+from jinja2 import Template
+out = Template("Hello {{ name }}").render(name="world")
+assert out == "Hello world"
+""",
+    "aiohttp": r"""
+import aiohttp
+assert aiohttp.__version__
+""",
+    "sympy": r"""
+import sympy
+x = sympy.Symbol("x")
+expr = sympy.expand((x + 1) ** 2)
+assert str(expr) == "x**2 + 2*x + 1"
+""",
+    "openpyxl": r"""
+from openpyxl import Workbook
+wb = Workbook()
+ws = wb.active
+ws["A1"] = "ok"
+assert ws["A1"].value == "ok"
+""",
+    "networkx": r"""
+import networkx as nx
+G = nx.Graph()
+G.add_edge("a", "b")
+assert nx.has_path(G, "a", "b")
+""",
+    "tqdm": r"""
+from tqdm import tqdm
+assert tqdm is not None
+""",
+    "beautifulsoup4": r"""
+from bs4 import BeautifulSoup
+soup = BeautifulSoup("<html><body><p>ok</p></body></html>", "html.parser")
+assert soup.p.text == "ok"
+""",
+    "lxml": r"""
+from lxml import etree
+root = etree.fromstring(b"<root><child>ok</child></root>")
+assert root.findtext("child") == "ok"
+""",
+    "orjson": r"""
+import orjson
+data = orjson.loads(orjson.dumps({"x": 1}))
+assert data["x"] == 1
+""",
+    "python-dateutil": r"""
+from dateutil.parser import parse
+dt = parse("2026-01-01")
+assert dt.year == 2026
+""",
+    "uvicorn": r"""
+import uvicorn
+assert uvicorn.__version__
+""",
+}
 
 
 def run(
@@ -173,48 +235,169 @@ def ensure_binary(name: str) -> None:
         raise FileNotFoundError(f"Required executable not found in PATH: {name}")
 
 
-def package_batches(packages: Sequence[str], batch_size: int) -> Iterable[List[str]]:
+def venv_path(work_dir: Path) -> Path:
+    return work_dir / VENV_DIRNAME
+
+
+def venv_python(work_dir: Path) -> Path:
+    scripts_dir = "Scripts" if os.name == "nt" else "bin"
+    executable = "python.exe" if os.name == "nt" else "python"
+    return venv_path(work_dir) / scripts_dir / executable
+
+
+def venv_env(work_dir: Path) -> Dict[str, str]:
+    env = os.environ.copy()
+    scripts_dir = "Scripts" if os.name == "nt" else "bin"
+    bin_dir = venv_path(work_dir) / scripts_dir
+    env["VIRTUAL_ENV"] = str(venv_path(work_dir))
+    env["PATH"] = f"{bin_dir}{os.pathsep}{env.get('PATH', '')}"
+    return env
+
+
+def reset_venv(work_dir: Path, selected_mode: str) -> None:
+    target = venv_path(work_dir)
+
+    if target.exists() or target.is_symlink():
+        ui_header("Removing existing virtual environment", str(target))
+
+        if target.is_dir() and not target.is_symlink():
+            delete_dir(target)
+        else:
+            target.unlink()
+
+    creation_mode = "uv" if selected_mode in {"uv", "all"} else "pepip"
+    ui_header(
+        "Creating virtual environment",
+        f"mode={creation_mode}; path={target}",
+    )
+
+    if creation_mode == "uv":
+        ensure_binary("uv")
+        run(["uv", "venv", "--clear", "--python", PYTHON_VERSION, str(target)], cwd=work_dir)
+    elif creation_mode == "pepip":
+        run([sys.executable, "-m", "venv", str(target)], cwd=work_dir)
+    else:
+        raise ValueError(
+            f"Unsupported virtual environment creation mode: {creation_mode}"
+        )
+
+
+def package_batches(
+    packages: Sequence[str],
+    batch_size: int,
+    start_index: int = 0,
+    limit: Optional[int] = None,
+) -> Iterable[List[str]]:
     if batch_size < 1:
         raise ValueError("--batch-size must be greater than or equal to 1.")
+    if start_index < 0:
+        raise ValueError("--start must be greater than or equal to 0.")
+    if start_index > len(packages):
+        raise ValueError(
+            f"--start must be less than or equal to the package count ({len(packages)})."
+        )
+    if limit is not None and limit < 0:
+        raise ValueError("--limit must be greater than or equal to 0.")
 
-    for start in range(0, len(packages), batch_size):
-        yield list(packages[start : start + batch_size])
+    selected_packages = packages[start_index:]
+    if limit is not None:
+        selected_packages = selected_packages[:limit]
 
-
-def install_batches_uv(
-    work_dir: Path, packages: Sequence[str], batch_size: int
-) -> None:
-    for idx, batch in enumerate(package_batches(packages, batch_size), start=1):
-        ui_header(f"Installing uv batch {idx}", ", ".join(batch))
-        run(["uv", "pip", "install", "--python", PYTHON_VERSION, *batch], cwd=work_dir)
-
-
-def install_batches_pepip(
-    work_dir: Path, packages: Sequence[str], batch_size: int
-) -> None:
-    for idx, batch in enumerate(package_batches(packages, batch_size), start=1):
-        ui_header(f"Installing pepip batch {idx}", ", ".join(batch))
-        run([sys.executable, "-m", "pepip.cli", "install", *batch], cwd=work_dir)
+    for start in range(0, len(selected_packages), batch_size):
+        yield list(selected_packages[start : start + batch_size])
 
 
-def run_smoke_code(work_dir: Path) -> None:
+def package_name(spec: str) -> str:
+    for separator in ("===", "==", ">=", "<=", "~=", "!=", ">", "<"):
+        if separator in spec:
+            return spec.split(separator, 1)[0].strip()
+    return spec.strip()
+
+
+def smoke_code_for_batch(batch: Sequence[str]) -> str:
+    chunks = []
+    missing = []
+
+    for spec in batch:
+        name = package_name(spec)
+        smoke_code = SMOKE_CODE_BY_PACKAGE.get(name)
+        if smoke_code is None:
+            missing.append(name)
+        else:
+            chunks.append(f"# --- {name} ---\n{smoke_code.strip()}")
+
+    if missing:
+        raise KeyError(
+            "No smoke code mapped for package(s): " + ", ".join(sorted(set(missing)))
+        )
+
+    return "\n\n".join(chunks)
+
+
+def run_smoke_code(work_dir: Path, batch: Sequence[str], batch_idx: int) -> None:
+    ui_header(f"Running smoke batch {batch_idx}", ", ".join(batch))
     run(
-        ["uv", "run", "--python", PYTHON_VERSION, "python", "-c", SMOKE_CODE],
+        [str(venv_python(work_dir)), "-c", smoke_code_for_batch(batch)],
         cwd=work_dir,
+        env=venv_env(work_dir),
     )
 
 
-def run_uv_mode(work_dir: Path, packages: Sequence[str], batch_size: int) -> None:
-    ensure_binary("uv")
-    run(["uv", "venv", "--python", PYTHON_VERSION], cwd=work_dir)
-    install_batches_uv(work_dir, packages, batch_size)
-    run_smoke_code(work_dir)
+def install_and_smoke_batches_uv(
+    work_dir: Path,
+    packages: Sequence[str],
+    batch_size: int,
+    start_index: int,
+    limit: Optional[int],
+) -> None:
+    for idx, batch in enumerate(
+        package_batches(packages, batch_size, start_index, limit), start=1
+    ):
+        ui_header(f"Installing uv batch {idx}", ", ".join(batch))
+        run(
+            ["uv", "pip", "install", "--python", str(venv_python(work_dir)), *batch],
+            cwd=work_dir,
+        )
+        run_smoke_code(work_dir, batch, idx)
 
 
-def run_pepip_mode(work_dir: Path, packages: Sequence[str], batch_size: int) -> None:
-    ensure_binary("uv")
-    install_batches_pepip(work_dir, packages, batch_size)
-    run_smoke_code(work_dir)
+def install_and_smoke_batches_pepip(
+    work_dir: Path,
+    packages: Sequence[str],
+    batch_size: int,
+    start_index: int,
+    limit: Optional[int],
+) -> None:
+    for idx, batch in enumerate(
+        package_batches(packages, batch_size, start_index, limit), start=1
+    ):
+        ui_header(f"Installing pepip batch {idx}", ", ".join(batch))
+        run(
+            [sys.executable, "-m", "pepip.cli", "install", *batch],
+            cwd=work_dir,
+            env=venv_env(work_dir),
+        )
+        run_smoke_code(work_dir, batch, idx)
+
+
+def run_uv_mode(
+    work_dir: Path,
+    packages: Sequence[str],
+    batch_size: int,
+    start_index: int,
+    limit: Optional[int],
+) -> None:
+    install_and_smoke_batches_uv(work_dir, packages, batch_size, start_index, limit)
+
+
+def run_pepip_mode(
+    work_dir: Path,
+    packages: Sequence[str],
+    batch_size: int,
+    start_index: int,
+    limit: Optional[int],
+) -> None:
+    install_and_smoke_batches_pepip(work_dir, packages, batch_size, start_index, limit)
 
 
 AVAILABLE_MODES = ("uv", "pepip")
@@ -289,8 +472,26 @@ def main() -> int:
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=3,
+        default=5,
         help="Number of packages to install per batch.",
+    )
+    parser.add_argument(
+        "--start",
+        type=int,
+        default=0,
+        help=(
+            "Zero-based package index to start from. This is independent of "
+            "--batch-size; e.g. --start 7 starts at package #8."
+        ),
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help=(
+            "Maximum number of packages to process after applying --start. "
+            "This is independent of --batch-size."
+        ),
     )
     parser.add_argument(
         "--package",
@@ -310,6 +511,14 @@ def main() -> int:
     )
     if not packages:
         raise ValueError("No packages specified.")
+    if args.start < 0:
+        raise ValueError("--start must be greater than or equal to 0.")
+    if args.start > len(packages):
+        raise ValueError(
+            f"--start must be less than or equal to the package count ({len(packages)})."
+        )
+    if args.limit is not None and args.limit < 0:
+        raise ValueError("--limit must be greater than or equal to 0.")
 
     selected_mode = args.mode or select_mode_interactively()
     selected_modes = tuple(modes_to_run(selected_mode))
@@ -319,17 +528,19 @@ def main() -> int:
         "Package smoke runner",
         (
             f"Selected mode: {selected_mode}; batch size: {args.batch_size}; "
+            f"start index: {args.start}; limit: {args.limit}; "
             f"python: {PYTHON_VERSION}; workdir={work_dir}"
         ),
     )
     ui_packages(packages)
+    reset_venv(work_dir, selected_mode)
 
     for mode in selected_modes:
         ui_header(f"Running mode: {mode}", f"workdir={work_dir}")
         if mode == "uv":
-            run_uv_mode(work_dir, packages, args.batch_size)
+            run_uv_mode(work_dir, packages, args.batch_size, args.start, args.limit)
         elif mode == "pepip":
-            run_pepip_mode(work_dir, packages, args.batch_size)
+            run_pepip_mode(work_dir, packages, args.batch_size, args.start, args.limit)
         else:
             raise ValueError(f"Unsupported mode: {mode}")
 

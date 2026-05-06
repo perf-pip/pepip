@@ -469,6 +469,13 @@ def install(
     # 1. Ensure the shared build venv exists.
     ensure_global_venv()
 
+    # Resolve against the local venv interpreter when it already exists.
+    # This prevents ABI mismatches (for example, linking cp314 wheels into a
+    # cp310 project environment). Fall back to global build interpreter.
+    target_python = _python_in_venv(local_venv)
+    if not target_python.exists():
+        target_python = _python_in_venv(GLOBAL_VENV)
+
     GLOBAL_VENV.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=GLOBAL_VENV.parent) as staging_dir:
         staging_site = Path(staging_dir) / "site-packages"
@@ -479,7 +486,7 @@ def install(
             "pip",
             "install",
             "--python",
-            str(_python_in_venv(GLOBAL_VENV)),
+            str(target_python),
             "--target",
             str(staging_site),
         ]
@@ -491,9 +498,7 @@ def install(
         subprocess.run(cmd, check=True)
 
         # 3. Store each resolved distribution version immutably.
-        distributions = _store_resolved_distributions(
-            staging_site, _python_in_venv(GLOBAL_VENV)
-        )
+        distributions = _store_resolved_distributions(staging_site, target_python)
 
         # 4. Ensure the local venv exists.
         ensure_local_venv(local_venv)
