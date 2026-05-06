@@ -1,0 +1,22 @@
+[MASTER]
+ignore=CVS
+
+[FORMAT]
+max-line-length=88
+
+[MESSAGES CONTROL]
+disable=
+    C0116,
+    C0115,
+    C0209,
+    C0415,
+    R0402,
+    R0801,
+    R0911,
+    R0914,
+    W0404,
+    W0613,
+    W0621,
+    W0718,
+    W0212,
+    W1510

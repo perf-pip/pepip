@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
-import subprocess
 
 from pepip.installer import PEPIP_HOME, _uv_executable, install
 

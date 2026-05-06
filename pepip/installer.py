@@ -154,7 +154,7 @@ def _package_store_root(python: Path | None = None) -> Path:
                 (
                     "import platform, sys; "
                     "print(f'{sys.implementation.cache_tag}-"
-                    "{sys.platform}-{platform.machine() or \"unknown\"}')"
+                    '{sys.platform}-{platform.machine() or "unknown"}\')'
                 ),
             ],
             capture_output=True,
@@ -392,7 +392,9 @@ def link_packages(global_site: Path, local_site: Path, entries: set[str]) -> Non
     try:
         local_site.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
-        raise RuntimeError(f"Failed to prepare local site-packages at {local_site}") from exc
+        raise RuntimeError(
+            f"Failed to prepare local site-packages at {local_site}"
+        ) from exc
 
     for name in sorted(entries):
         global_entry = global_site / name
