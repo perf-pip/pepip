@@ -39,6 +39,9 @@ Given `pepip install ...`:
 	- CLI behavior tests (success paths, help, error handling, messages).
 - `eval/benchmark.py`
 	- Performance and disk usage comparison of pepip vs plain uv workflows.
+- `test-scripts/`
+	- Higher-level validation and experiment scripts beyond the unit suite.
+	- Canonical experiment inventory: `docs/Production_readiness.md`.
 - `README.md`
 	- User-facing overview, setup, usage, benchmark examples.
 
@@ -128,6 +131,15 @@ Optional benchmark sanity check:
 python eval/benchmark.py
 ```
 
+Optional higher-level validation:
+
+```bash
+test-scripts/test_uv_versions.sh
+python3 test-scripts/install_smoke_matrix.py --mode pepip --batch-size 5
+test-scripts/uv_repo_tester.sh
+test-scripts/pepip_repo_tester.sh
+```
+
 If changing CLI behavior, run at least:
 
 ```bash
@@ -155,7 +167,13 @@ When adding features, consider whether they affect:
 - CLI parser and help text (`pepip/cli.py`)
 - installer core flow (`pepip/installer.py`)
 - tests in both CLI and installer suites
+- validation coverage in `test-scripts/` when behavior affects compatibility or real-world install flows
 - README usage examples
+
+If the change touches validation workflows or experiment interpretation, also update:
+
+- `docs/Production_readiness.md`
+- `test-scripts/README.md`
 
 ## 10) Known Limitations / Design Tradeoffs
 
@@ -165,7 +183,27 @@ When adding features, consider whether they affect:
 - Namespace packages can still need special handling if multiple distributions
 	own the same top-level package directory.
 
-## 11) Quick Task Routing for Future Agents
+## 11) test-scripts Experiment Map
+
+Use `docs/Production_readiness.md` as the canonical description. The main experiments in `test-scripts/` are:
+
+- `test_uv_versions.sh` and `test_uv_versions_direct.sh`
+	- `uv` compatibility matrix and direct CLI/source validation across `uv` versions.
+- `install_smoke_matrix.py` with `_smoke_matrix_utils.py`
+	- Pinned package install smoke matrix for `uv` mode and `pepip` mode.
+	- Result files: `results.tsv`, `pepip_results.tsv`.
+- `uv_repo_tester.sh`
+	- External repository baseline with plain `uv`.
+	- Uses `uv_repos.txt` and writes `uv_repos_success.txt` / `uv_repos_failed.txt`.
+- `pepip_repo_tester.sh`
+	- External repository replay with `pepip` against the repositories that already passed with `uv`.
+	- Uses `uv_repos_success.txt` and writes `pepip_repos_success.txt` / `pepip_repos_failed.txt`.
+- `test_package_versions.sh` and `test_script.sh`
+	- Small local manual sanity checks for version isolation and disk-usage behavior.
+- `remove_finished.py` and `sort-repos.py`
+	- Helpers for curating and rerunning the external repository experiment inputs/results.
+
+## 12) Quick Task Routing for Future Agents
 
 - "CLI flags/help/output wrong" -> inspect `pepip/cli.py` + `tests/test_cli.py`.
 - "Symlink behavior broken" -> inspect `pepip/installer.py` +
@@ -173,8 +211,15 @@ When adding features, consider whether they affect:
 - "Install command not invoking uv correctly" -> inspect `install(...)` command
 	assembly and tests around requirements handling.
 - "Performance/disk comparison question" -> inspect and run `eval/benchmark.py`.
+- "uv version compatibility question" -> inspect `test-scripts/test_uv_versions.sh`
+	+ `test-scripts/test_uv_versions_direct.sh`.
+- "Real package install smoke failure" -> inspect `test-scripts/install_smoke_matrix.py`
+	+ `test-scripts/_smoke_matrix_utils.py`.
+- "External repository experiment or pass-rate question" -> inspect
+	`docs/Production_readiness.md`, `test-scripts/uv_repo_tester.sh`,
+	`test-scripts/pepip_repo_tester.sh`, and the `*_repos_*.txt` files.
 
-## 12) Definition of Done for Agent Changes
+## 13) Definition of Done for Agent Changes
 
 Before finishing:
 
@@ -183,3 +228,5 @@ Before finishing:
 3. CLI behavior remains consistent with section 7, unless intentionally changed
 	 with tests.
 4. User-facing changes are reflected in `README.md` when appropriate.
+5. Validation or experiment changes are reflected in `docs/Production_readiness.md`
+	 and `test-scripts/README.md` when appropriate.
