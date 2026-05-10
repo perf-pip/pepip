@@ -28,6 +28,18 @@ def test_install_packages_success() -> None:
     )
 
 
+def test_install_accepts_extras_style_package_specifier() -> None:
+    with patch("pepip.cli.install", return_value={"project"}) as mock_install:
+        rc = main(["install", ".[all]"])
+
+    assert rc == 0
+    mock_install.assert_called_once_with(
+        packages=[".[all]"],
+        requirements_file=None,
+        local_venv=Path(".venv"),
+    )
+
+
 def test_install_requirements_file(tmp_path: Path) -> None:
     req = tmp_path / "requirements.txt"
     req.write_text("numpy\n")
@@ -126,8 +138,9 @@ def test_install_reports_subprocess_style_failures(
     assert "pepip: error: permission denied" in captured.err
 
 
-def test_top_level_unknown_command_returns_argparse_error() -> None:
-    with pytest.raises(SystemExit) as exc_info:
-        main(["unknown"])
+def test_top_level_unknown_command_is_forwarded_to_uv() -> None:
+    with patch("pepip.cli._run_uv", return_value=0) as mock_run_uv:
+        rc = main(["unknown"])
 
-    assert exc_info.value.code == 2
+    assert rc == 0
+    mock_run_uv.assert_called_once_with(["unknown"])

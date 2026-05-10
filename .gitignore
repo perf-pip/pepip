@@ -4,6 +4,11 @@ TODO*.md
 .codex
 .benchmarks/
 uv.lock
+scripts/*results.tsv
+scripts/uv_repos_failed.txt
+# scripts/uv_repos.txt
+scripts/pepip_repos_failed.txt
+# scripts/pepip_repos.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

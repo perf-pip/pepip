@@ -1,0 +1,563 @@
+Tried multiple times:
+https://github.com/leonardas103/uv-example-project
+https://github.com/justrach/uv-starter
+https://github.com/prrao87/uv-demo
+https://github.com/canstralian/python-uv-template
+https://github.com/mjun0812/python-project-template
+https://github.com/pawamoy/copier-uv
+https://github.com/johnthagen/python-blueprint
+https://github.com/roboes/python-project-template
+https://github.com/mjun0812/python-copier-template
+https://github.com/ArsalanMacknojia/uv-python-template
+https://github.com/radix-ai/python-project-template
+https://github.com/fpgmaas/cookiecutter-uv
+https://github.com/osprey-oss/migrate-to-uv
+https://github.com/danilop/requirements-to-uv
+https://github.com/iamshreeram/uve
+https://github.com/tox-dev/tox-uv
+https://github.com/nat-n/poethepoet
+https://github.com/aex-dev/uv2pip
+https://github.com/mkniewallner/migrate-to-uv
+https://github.com/astral-sh/uv-docker-example
+https://github.com/astral-sh/uv-fastapi-example
+https://github.com/astral-sh/uv-flask-example
+https://github.com/astral-sh/uv-django-example
+https://github.com/astral-sh/uv-github-actions-example
+https://github.com/markcallen/python-fastapi-uv-example
+https://github.com/remsky/Kokoro-FastAPI
+https://github.com/emasuriano/fastapi-uv-demo
+https://github.com/grillazz/fastapi-sqlalchemy-asyncpg
+https://github.com/benavlabs/FastAPI-boilerplate
+https://github.com/laurentS/slowapi
+https://github.com/HelloThisIsFlo/
+https://github.com/Snapchat/uv-test
+https://github.com/Chaoses-Ib/Python
+https://github.com/imaurer/awesome-uv
+https://github.com/EnhancedJax/Bagels
+https://github.com/simonw/llm
+https://github.com/simonw/sqlite-utils
+https://github.com/tconbeer/harlequin
+https://github.com/jlowin/fastmcp
+https://github.com/jxnl/instructor
+https://github.com/danswer-ai/danswer
+https://github.com/anthropics/anthropic-cookbook
+https://github.com/openai/swarm
+https://github.com/langchain-ai/langgraph-codeact
+https://github.com/strands-agents/samples
+https://github.com/meta-pytorch/OpenEnv
+https://github.com/prrao87/polars-demo
+https://github.com/prrao87/async-db-benchmarks
+https://github.com/prrao87/graph-db-embeddings
+https://github.com/hynek/uv-docker-patterns
+https://github.com/tiangolo/
+https://github.com/prefix-dev/rattler-build
+https://github.com/yezz123/authx
+https://github.com/samedwardes/data-science-uv
+https://github.com/chandrakundu/uv-tutorial
+https://github.com/villoro/uv-ruff-demo
+https://github.com/baggiponte/pypackage-workshop
+https://github.com/pydantic/pydantic-settings
+https://github.com/machow/quartodoc
+https://github.com/Textualize/rich
+https://github.com/Textualize/textual
+https://github.com/modelcontextprotocol/python-sdk
+https://github.com/wong2/mcp-cli
+https://github.com/anaisbetts/mcp-youtube
+https://github.com/calclavia/mcp-obsidian
+https://github.com/rusiaaman/wcgw
+https://github.com/aider-AI/aider
+https://github.com/soxoj/maigret
+https://github.com/tiangolo/typer
+https://github.com/yezz123/pyngo
+https://github.com/koxudaxi/datamodel-code-generator
+https://github.com/florimondmanca/asgi-lifespan
+https://github.com/litestar-org/litestar
+https://github.com/ManimCommunity/manim
+https://github.com/marimo-team/marimo
+https://github.com/hellothisisflo/
+https://github.com/karpathy/autoresearch
+
+
+Tried 1 time:
+https://github.com/florimondmanca/httpx-sse
+https://github.com/prefix-dev/pixi
+https://github.com/Aider-AI/aider
+https://github.com/gdamjan/uv-getting-started
+https://github.com/fkodom/python-repo-template
+https://github.com/saezlab/python-project
+https://github.com/python-developer-tooling-handbook/demo-uv
+https://github.com/alan-turing-institute/python-project-template
+https://github.com/batistagroup/python-template
+https://github.com/the0807/UV-Toolkit
+https://github.com/cookiejar/cookietemple
+https://github.com/pawamoy/copier-python
+https://github.com/drivendataorg/cookiecutter-data-science
+https://github.com/zhanymkanov/fastapi-best-practices
+https://github.com/Nintorac/audioflux-template
+https://github.com/martinxsliu/python-template
+https://github.com/Miksus/python-package-template
+https://github.com/waynerv/modern-python-template
+https://github.com/cjolowicz/cookiecutter-hypermodern-python
+https://github.com/TezRomacH/python-package-template
+https://github.com/clivern/berry
+https://github.com/tobiaszwt/python-project-template
+https://github.com/microsoft/python-package-template
+https://github.com/audreyfeldroy/cookiecutter-pypackage
+https://github.com/fastapi/full-stack-fastapi-template
+https://github.com/encode/starlette
+https://github.com/encode/httpx
+https://github.com/encode/uvicorn
+https://github.com/agronholm/anyio
+https://github.com/starlite-api/starlite
+https://github.com/litestar-org/polyfactory
+https://github.com/Neoteroi/BlackSheep
+https://github.com/emmett-framework/granian
+https://github.com/vitalik/django-ninja
+https://github.com/honojs/middleware
+https://github.com/langchain-ai/langserve
+https://github.com/PrefectHQ/prefect
+https://github.com/modal-labs/modal-client
+https://github.com/BerriAI/litellm
+https://github.com/run-llama/llama_index
+https://github.com/crewAIInc/crewAI
+https://github.com/microsoft/autogen
+https://github.com/agno-agi/agno
+https://github.com/astral-sh/ruff
+https://github.com/astral-sh/ty
+https://github.com/astral-sh/uv-pre-commit
+https://github.com/python/mypy
+https://github.com/microsoft/pyright
+https://github.com/charliermarsh/ruff-pre-commit
+https://github.com/pre-commit/pre-commit
+https://github.com/pytest-dev/pytest-asyncio
+https://github.com/pytest-dev/pytest-cov
+https://github.com/Textualize/toolong
+https://github.com/charliermarsh/uvx
+https://github.com/jdx/mise
+https://github.com/nerds-github/uvicorn-worker
+https://github.com/hynek/structlog
+https://github.com/hynek/hyperlink
+https://github.com/hynek/svcs
+https://github.com/python-jsonschema/check-jsonschema
+https://github.com/sqlfluff/sqlfluff
+https://github.com/samuelcolvin/watchfiles
+https://github.com/pola-rs/polars
+https://github.com/plotly/dash
+https://github.com/streamlit/streamlit
+https://github.com/gradio-app/gradio
+https://github.com/evidentlyai/evidently
+https://github.com/kedro-org/kedro
+https://github.com/dagster-io/dagster
+https://github.com/apache/airflow
+https://github.com/great-expectations/great_expectations
+https://github.com/unionai-oss/pandera
+https://github.com/jupyterlab/jupyterlab
+https://github.com/microsoft/qlib
+https://github.com/bentoml/BentoML
+https://github.com/ray-project/ray
+https://github.com/openai/openai-python
+https://github.com/anthropics/anthropic-sdk-python
+https://github.com/microsoft/semantic-kernel
+https://github.com/langchain-ai/langchain
+https://github.com/langchain-ai/langgraph
+https://github.com/microsoft/graphrag
+https://github.com/stanfordnlp/dspy
+https://github.com/vllm-project/vllm
+https://github.com/huggingface/text-generation-inference
+https://github.com/huggingface/transformers
+https://github.com/OpenInterpreter/open-interpreter
+https://github.com/mem0ai/mem0
+https://github.com/camel-ai/camel
+https://github.com/microsoft/TaskWeaver
+https://github.com/Significant-Gravitas/AutoGPT
+https://github.com/e2b-dev/E2B
+https://github.com/continuedev/continue
+https://github.com/All-Hands-AI/OpenHands
+https://github.com/getzep/graphiti
+https://github.com/modelcontextprotocol/servers
+https://github.com/modelcontextprotocol/inspector
+https://github.com/punkpeye/awesome-mcp-servers
+https://github.com/executeautomation/mcp-playwright
+https://github.com/SmitheryAI/reference-servers
+https://github.com/upstash/context7
+https://github.com/supermemoryai/supermemory-mcp
+https://github.com/21st-dev/magic-mcp
+https://github.com/jlowin/fastmcp-examples
+https://github.com/open-webui/mcpo
+https://github.com/astral-sh/setup-uv
+https://github.com/docker/awesome-compose
+https://github.com/tiangolo/uvicorn-gunicorn-fastapi-docker
+https://github.com/GoogleCloudPlatform/cloud-run-microservice-template-python
+https://github.com/aws-samples/serverless-patterns
+https://github.com/railwayapp/template-fastapi
+https://github.com/vercel/examples
+https://github.com/pydantic/pydantic
+https://github.com/pydantic/pydantic-core
+https://github.com/encode/httpcore
+https://github.com/DiamondLightSource/python-copier-template
+https://github.com/Ranteck/PyStrict-strict-python
+https://github.com/clementpoiret/nix-python-devenv
+https://github.com/ritwiktiwari/copier-astral
+https://github.com/donbarbos/telegram-bot-template
+https://github.com/iloveitaly/python-starter-template
+https://github.com/AmineDjeghri/generative-ai-project-template
+https://github.com/denisecase/applied-ml-template
+https://github.com/andrew000/aiogram-template
+https://github.com/wyattferguson/pattern
+https://github.com/andre-salvati/databricks-template
+https://github.com/GetBindu/create-bindu-agent
+https://github.com/albertomh/pycliche
+https://github.com/yuxuzi/pytemplate-uv
+https://github.com/DIMFLIX/PyTemplate
+https://github.com/robust-python/cookiecutter-robust-python
+https://github.com/a1d4r/python-project-template
+https://github.com/nickatnight/cookiecutter-fastapi-backend
+https://github.com/GabrielVGS/fastapi-base
+https://github.com/helmut-hoffer-von-ankershoffen/oe-python-template
+https://github.com/redis-developer/redis-starter-python
+https://github.com/AndreuCodina/python-template
+https://github.com/arctikant/fastapi-modular-monolith-starter-kit
+https://github.com/nulladmin1/nix-flake-templates
+https://github.com/schubergphilis/paleofuturistic_python
+https://github.com/leehuwuj/python-uv-monorepo-template
+https://github.com/ryankanno/cookiecutter-py
+https://github.com/intellectronica/ez-mcp
+https://github.com/FerranAD/simple-uv2nix
+https://github.com/mgaitan/python-package-copier-template
+https://github.com/VectorInstitute/aieng-template-uv
+https://github.com/Geson-anko/ros2_uv_template
+https://github.com/Diapolo10/python-uv-template
+https://github.com/lukin0110/uv-copier
+https://github.com/michplunkett/python-project-template
+https://github.com/idatsy/python-base-uv
+https://github.com/rafahuelin/cookiecutter-docker-python-uv
+https://github.com/JeremieGince/PythonProject-Template
+https://github.com/v-mdev/template-python-projects
+https://github.com/whiteprints/whiteprints
+https://github.com/Jebel-Quant/rhiza
+https://github.com/python-boilerplate/uv-template
+https://github.com/pssah4/python-uv-speckit-template
+https://github.com/philippschmalen/devcontainer-python-uv-template
+https://github.com/jarlor/uv-python-repo-template
+https://github.com/pasunboneleve/baker-uv-template
+https://github.com/JnyJny/python-package-cookiecutter
+https://github.com/TimNekk/copier-telegram-bot
+https://github.com/iamgabs/cloud-run-python-template
+https://github.com/lucidfrontier45/python-uv-template
+https://github.com/stateful-y/python-package-copier
+https://github.com/Miyamura80/Python-Template
+https://github.com/Nekidev/uv-fastapi-tortoise
+https://github.com/inokufu/python-project-template
+https://github.com/ulken94/uv_template
+https://github.com/jaosch/uv-tutorial
+https://github.com/MrConsoleka/aiogram-miniapp-template
+https://github.com/okojomoeko/python-uv-project-template
+https://github.com/Magnicord/llm-env-templates
+https://github.com/araa47/cookiecutter-python-uv-boilerplate
+https://github.com/Cecron/copier-python
+https://github.com/Kei18/pyuv-template
+https://github.com/cacelass/preparacion-entorno-python
+https://github.com/nklsw/django-docker-starter
+https://github.com/omaciel/claude-python-setup
+https://github.com/fburleson/pyuv-copier-template
+https://github.com/myrheimb/devenv-python-uv
+https://github.com/bassemkaroui/python-template-uv
+https://github.com/Geson-anko/python-uv-template
+https://github.com/amir-kashi/python-uv-template
+https://github.com/CGuichard/cookiecutter-pypackage
+https://github.com/dbohdan/python-template
+https://github.com/appleparan/copier-modern-ml
+https://github.com/slangenbach/cookiecutter-python-uv
+https://github.com/mohan-m21/python-project-template
+https://github.com/fikra-tech/uv-sync
+https://github.com/pytgaen/uv-pipx
+https://github.com/mochiya98/uv-pip-router
+https://github.com/hanshendrickx/uv-pip-comprehensive-python-package-updater
+https://github.com/jackrosenthal/pip-is-uv
+https://github.com/bartdorlandt/convert_poetry2uv
+https://github.com/lalvarezt/uv-script-manager
+https://github.com/pivoshenko/uv-upsync
+https://github.com/gpupo/python-pyproject-toml-uv-bazel
+https://github.com/yeung108/uv-workspace-paths
+https://github.com/Deltamir/semantic-release-uv
+https://github.com/openai/openai-agents-python
+https://github.com/pallets-eco/flask-admin
+https://github.com/GetStream/stream-py
+https://github.com/langflow-ai/langflow
+https://github.com/reflex-dev/reflex
+https://github.com/vwxyzjn/cleanrl
+https://github.com/pipecat-ai/pipecat
+https://github.com/fastapi/full-stack-fastapi-template
+https://github.com/sierra-research/tau2-bench
+https://github.com/loonghao/wecom-bot-mcp-server
+https://github.com/pydantic/pydantic-ai
+https://github.com/huggingface/smolagents
+https://github.com/agno-agi/agno
+https://github.com/meta-llama/llama-cookbook
+https://github.com/OpenRLHF/OpenRLHF
+https://github.com/microsoft/DeepSpeedExamples
+https://github.com/litestar-org/litestar
+https://github.com/emmett-framework/granian
+https://github.com/Neoteroi/BlackSheep
+https://github.com/sanic-org/sanic
+https://github.com/fastapi/sqlmodel
+https://github.com/astral-sh/ty
+https://github.com/cjolowicz/cookiecutter-hypermodern-python
+https://github.com/copier-org/copier
+https://github.com/modelcontextprotocol/python-sdk
+https://github.com/modelcontextprotocol/servers
+https://github.com/chroma-core/chroma
+https://github.com/qdrant/qdrant-client
+https://github.com/milvus-io/pymilvus
+https://github.com/pola-rs/polars
+https://github.com/duckdb/duckdb
+https://github.com/dbt-labs/dbt-core
+https://github.com/jlowin/fastmcp
+https://github.com/googleapis/python-genai
+https://github.com/BurntSushi/ripgrep
+https://github.com/sharkdp/fd
+https://github.com/zed-industries/zed
+https://github.com/astral-sh/python-build-standalone
+https://github.com/python/cpython
+https://github.com/pydantic/pydantic
+https://github.com/python-attrs/attrs
+https://github.com/samuelcolvin/watchfiles
+https://github.com/marimo-team/marimo
+https://github.com/manimCommunity/manim
+https://github.com/taichi-dev/taichi
+https://github.com/mitmproxy/mitmproxy
+https://github.com/scrapy/scrapy
+https://github.com/encode/uvicorn
+https://github.com/hypercorn/hypercorn
+https://github.com/pgvector/pgvector-python
+https://github.com/redis/redis-py
+https://github.com/aio-libs/aiohttp
+https://github.com/encode/httpcore
+https://github.com/getsentry/sentry-python
+https://github.com/temporalio/sdk-python
+https://github.com/python-trio/trio
+https://github.com/agronholm/anyio
+https://github.com/microsoft/markitdown
+https://github.com/AnswerDotAI/fsdp_qlora
+https://github.com/tadata-org/fastapi_mcp
+https://github.com/unclecode/crawl4ai
+https://github.com/exa-labs/exa-py
+https://github.com/e2b-dev/e2b
+https://github.com/livekit/agents
+https://github.com/deepset-ai/hayhooks
+https://github.com/jina-ai/node-DeepResearch
+https://github.com/coleam00/ottomator-agents
+https://github.com/langgenius/dify
+https://github.com/Aider-AI/aider
+https://github.com/SimonWillison/llm
+https://github.com/SimonWillison/files-to-prompt
+https://github.com/zed-industries/extensions
+https://github.com/ploomber/ploomber
+https://github.com/mage-ai/mage-ai
+https://github.com/kedro-org/kedro
+https://github.com/arize-ai/phoenix
+https://github.com/UnionLabs/union
+https://github.com/fal-ai/fal
+https://github.com/modal-labs/modal-client-python
+https://github.com/BerriAI/openai-gpt-token-counter
+https://github.com/groq/groq-python
+https://github.com/togethercomputer/together-python
+https://github.com/cohere-ai/cohere-python
+https://github.com/vercel/ai-chatbot
+https://github.com/microsoft/graphrag
+https://github.com/NirDiamant/RAG_Techniques
+https://github.com/pathwaycom/pathway
+https://github.com/jerryjliu/llama_index_tsg
+https://github.com/deepset-ai/haystack-core-integrations
+https://github.com/run-llama/create-llama
+https://github.com/PrefectHQ/examples
+https://github.com/microsoft/TaskWeaver
+https://github.com/microsoft/PromptWizard
+https://github.com/stanfordnlp/dspy
+https://github.com/landing-ai/vision-agent
+https://github.com/openai/swarm
+https://github.com/google/adk-python
+https://github.com/browserbase/stagehand
+https://github.com/airtai/faststream
+https://github.com/fastapi-users/fastapi-users
+https://github.com/BeanieODM/beanie
+https://github.com/art049/odmantic
+https://github.com/frappe/agentic
+https://github.com/langroid/langroid
+https://github.com/letta-ai/letta
+https://github.com/mem0ai/mem0
+https://github.com/gptscript-ai/gptscript
+https://github.com/noamgat/lm-format-enforcer
+https://github.com/dottxt-ai/outlines
+https://github.com/guidance-ai/guidance
+https://github.com/promptfoo/promptfoo
+https://github.com/evalplus/evalplus
+https://github.com/openai/evals
+https://github.com/EleutherAI/lm-evaluation-harness
+https://github.com/huggingface/accelerate
+https://github.com/huggingface/datasets
+https://github.com/mlflow/mlflow
+https://github.com/wandb/wandb
+https://github.com/comet-ml/opik
+https://github.com/traceloop/openllmetry
+https://github.com/open-telemetry/opentelemetry-python
+https://github.com/getsentry/seer
+https://github.com/lastmile-ai/mcp-agent
+https://github.com/rasbt/LLMs-from-scratch
+https://github.com/drivendataorg/cookiecutter-data-science
+https://github.com/encode/httpx
+https://github.com/encode/starlette
+https://github.com/pallets/flask
+https://github.com/pallets/click
+https://github.com/pallets/jinja
+https://github.com/pallets/werkzeug
+https://github.com/tiangolo/typer
+https://github.com/shadcn-ui/ui
+https://github.com/langchain-ai/langchain
+https://github.com/langchain-ai/open_deep_research
+https://github.com/BerriAI/litellm
+https://github.com/instructor-ai/instructor
+https://github.com/PrefectHQ/prefect
+https://github.com/apache/airflow
+https://github.com/dagster-io/dagster
+https://github.com/fastapi/fastapi
+https://github.com/browser-use/browser-use
+https://github.com/sqlalchemy/sqlalchemy
+https://github.com/beartype/beartype
+https://github.com/TrelisResearch/learn-uv
+https://github.com/step-security/setup-uv
+https://github.com/comfyanonymous/ComfyUI
+https://github.com/charliermarsh/uv-demo
+https://github.com/tiangolo/full-stack-fastapi-template
+https://github.com/ModalLabs/modal-examples
+https://github.com/e2b-dev/code-interpreter
+https://github.com/AnswerDotAI/fasthtml-example
+https://github.com/DAGWorks-Inc/hamilton
+https://github.com/GIGCymru/architecture
+https://github.com/epfml/getting-started
+https://github.com/karpathy/nanoGPT
+https://github.com/mahm/software-design-patterns
+https://github.com/yaakapp/app
+https://github.com/casey/just
+https://github.com/fastapi-practices/fastapi_best_architecture
+https://github.com/dlt-hub/dlt
+https://github.com/simonw/files-to-prompt
+https://github.com/simonw/llm-anthropic
+https://github.com/lincc-frameworks/hats
+https://github.com/TrelisResearch/learn-uv
+https://github.com/IBM/fimoda
+https://github.com/step-security/setup-uv
+https://github.com/comfyanonymous/ComfyUI
+https://github.com/charliermarsh/uv-demo (no directory)
+https://github.com/tiangolo/full-stack-fastapi-template
+https://github.com/ModalLabs/modal-examples (no directory)
+https://github.com/e2b-dev/code-interpreter
+https://github.com/deepset-ai/haystack
+https://github.com/AnswerDotAI/fasthtml-example
+https://github.com/DAGWorks-Inc/hamilton
+https://github.com/GIGCymru/architecture
+https://github.com/HKUDS/LightRAG
+https://github.com/epfml/getting-started
+https://github.com/karpathy/nanoGPT
+https://github.com/lincc-frameworks/tape	pytest failed
+https://github.com/truera/trulens	pytest failed
+https://github.com/a2aproject/A2A	uv install failed
+https://github.com/canonical/charmcraft	pytest failed
+https://github.com/canonical/operator	pytest failed
+https://github.com/canonical/rockcraft	pytest failed
+https://github.com/canonical/snapcraft	uv install failed
+https://github.com/jupyterlab/jupyter-ai	pytest failed
+https://github.com/jupyterlab/jupyterlab-git	pytest failed
+https://github.com/openbb-finance/OpenBB	uv install failed
+https://github.com/iterative/dvc	pytest failed
+https://github.com/pytest-dev/pytest	pytest failed
+https://github.com/IBM/terratorch	pytest failed
+https://github.com/mahm/software-design-patterns	git clone failed (no directory)
+https://github.com/yaakapp/app	uv install failed
+https://github.com/casey/just	uv install failed
+https://github.com/fastapi-practices/fastapi_best_architecture	pytest failed
+https://github.com/dlt-hub/dlt	pytest failed
+https://github.com/simonw/files-to-prompt	pytest failed
+https://github.com/simonw/llm-anthropic	pytest failed
+https://github.com/simonw/datasette	pytest failed
+https://github.com/lincc-frameworks/hats	git clone failed (no directory)
+https://github.com/lincc-frameworks/tape	pytest failed
+https://github.com/wandb/weave	pytest failed
+https://github.com/truera/trulens	pytest failed
+https://github.com/a2aproject/A2A	uv install failed
+https://github.com/canonical/charmcraft	pytest failed
+https://github.com/canonical/operator	pytest failed
+https://github.com/canonical/rockcraft	pytest failed
+https://github.com/canonical/snapcraft	uv install failed
+https://github.com/freqtrade/freqtrade	pytest failed
+https://github.com/jupyterlab/jupyter-ai	pytest failed
+https://github.com/jupyterlab/jupyterlab-git	pytest failed
+https://github.com/openbb-finance/OpenBB	uv install failed
+https://github.com/zenml-io/zenml	pytest failed
+https://github.com/iterative/dvc	pytest failed
+https://github.com/celery/celery	pytest failed
+https://github.com/python-telegram-bot/python-telegram-bot	pytest failed
+https://github.com/tiangolo/sqlmodel	pytest failed
+https://github.com/beeware/briefcase	pytest failed
+https://github.com/beeware/toga	pytest failed
+https://github.com/weaviate/weaviate-python-client	pytest failed
+https://github.com/lancedb/lancedb	uv install failed
+https://github.com/jina-ai/reader	uv install failed
+https://github.com/jina-ai/latechunking	git clone failed (no directory)
+https://github.com/crewAIInc/crewAI-examples	uv install failed
+https://github.com/roboflow/inference	pytest failed
+https://github.com/roboflow/supervision	pytest failed
+https://github.com/pdm-project/pdm	pytest failed
+https://github.com/python-semantic-release/python-semantic-release	pytest failed
+https://github.com/langgenius/dify-plugin-daemon	uv install failed
+https://github.com/pydantic/logfire	pytest failed
+https://github.com/unclecode/discord-ai-bot	git clone failed (no directory)
+https://github.com/ollama/ollama-python	pytest failed
+https://github.com/googleapis/python-aiplatform	pytest failed
+https://github.com/googleapis/python-adk	git clone failed (no directory)
+https://github.com/google-gemini/generative-ai-python	pytest failed
+https://github.com/googleapis/python-bigquery	pytest failed
+https://github.com/googleapis/python-firestore	uv install failed
+https://github.com/googleapis/python-storage	pytest failed
+https://github.com/googleapis/python-pubsub	pytest failed
+https://github.com/googleapis/python-spanner	pytest failed
+https://github.com/googleapis/python-datastore	uv install failed
+https://github.com/googleapis/python-secret-manager	uv install failed
+https://github.com/googleapis/python-logging	uv install failed
+https://github.com/googleapis/python-monitoring	uv install failed
+https://github.com/googleapis/python-trace	uv install failed
+https://github.com/googleapis/python-error-reporting	uv install failed
+https://github.com/googleapis/python-language	uv install failed
+https://github.com/googleapis/python-translate	uv install failed
+https://github.com/googleapis/python-vision	uv install failed
+https://github.com/googleapis/python-videointelligence	uv install failed
+https://github.com/googleapis/python-texttospeech	uv install failed
+https://github.com/googleapis/python-speech	uv install failed
+https://github.com/googleapis/python-documentai	uv install failed
+https://github.com/googleapis/python-retail	uv install failed
+https://github.com/googleapis/python-discoveryengine	git clone failed (no directory)
+https://github.com/googleapis/python-talent	uv install failed
+https://github.com/googleapis/python-contact-center-insights	uv install failed
+https://github.com/googleapis/python-dialogflow	uv install failed
+https://github.com/googleapis/python-asset	uv install failed
+https://github.com/googleapis/python-os-config	uv install failed
+https://github.com/googleapis/python-compute	uv install failed
+https://github.com/googleapis/python-container	uv install failed
+https://github.com/googleapis/python-run	uv install failed
+https://github.com/googleapis/python-functions	uv install failed
+https://github.com/googleapis/python-build	git clone failed (no directory)
+https://github.com/googleapis/python-artifact-registry	uv install failed
+https://github.com/googleapis/python-scheduler	uv install failed
+https://github.com/googleapis/python-workflows	uv install failed
+https://github.com/googleapis/python-orchestration-airflow	uv install failed
+https://github.com/googleapis/python-cloudbuild	uv install failed
+https://github.com/googleapis/python-billing	uv install failed
+https://github.com/googleapis/python-api-core	uv install failed
+https://github.com/googleapis/python-auth	git clone failed (no directory)
+https://github.com/googleapis/python-crc32c	uv install failed
+https://github.com/googleapis/python-resumable-media	git clone failed (no directory)
+https://github.com/googleapis/gapic-generator-python	pytest failed
+https://github.com/googleapis/release-please-action	uv install failed
+https://github.com/pytest-dev/pytest	pytest failed
+https://github.com/huggingface/trl
+https://github.com/Lightning-AI/pytorch-lightning

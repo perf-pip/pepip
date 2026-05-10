@@ -1,0 +1,4 @@
+# Repositories that document/use uv in setup/docs. Don't care popularity.
+# Hint: Use GitHub search: "uv pip" or "uv venv" in readme files. Also use other ways.
+# You gave me first 200 results in a previous conversation. Skip them now.
+# Write as a list of URLs without labels or categories.

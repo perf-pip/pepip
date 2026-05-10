@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import subprocess
 import sys
 from pathlib import Path
@@ -9,67 +10,65 @@ from pathlib import Path
 from pepip.installer import PEPIP_HOME, _uv_executable, install
 
 
-def _build_parser():
-    import argparse
-
+def _build_root_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pepip",
         description=(
             "pepip — shared package store installer.\n\n"
-            "Installs resolved package versions into an immutable shared store "
-            "(%(pepip_home)s/packages) using uv, then symlinks them into the "
-            "project-local .venv so each project can activate its own "
-            "environment while reusing packages."
+            "Use `pepip install ...` to install packages into pepip's immutable "
+            "shared store at %(pepip_home)s/packages and link them into the "
+            "project-local virtual environment.\n"
+            "All other commands are forwarded to `uv` unchanged so pepip can "
+            "serve as a drop-in CLI replacement."
         )
         % {"pepip_home": PEPIP_HOME},
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  pepip install numpy pandas\n"
+            "  pepip install -r requirements.txt --venv .venv\n"
+            "  pepip sync --all\n"
+            "  pepip run python -m pytest\n"
+            "  pepip pip install '.[all]'"
+        ),
     )
+    return parser
 
-    subparsers = parser.add_subparsers(dest="command", metavar="<command>")
 
-    # --- install -----------------------------------------------------------
-    install_parser = subparsers.add_parser(
-        "install",
-        help="Install packages into the shared store and link them into .venv",
+def _build_install_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="pepip install",
         description=(
             "Install one or more packages (or a requirements file) into the "
             "shared package store and create symlinks inside the project-local "
             ".venv directory."
         ),
     )
-    install_parser.add_argument(
+    parser.add_argument(
         "packages",
         nargs="*",
         metavar="PACKAGE",
-        help="Package specifiers to install (e.g. 'numpy' or 'pandas>=2.0')",
+        help="Package specifiers to install (e.g. 'numpy', 'pandas>=2.0', or '.[all]')",
     )
-    install_parser.add_argument(
+    parser.add_argument(
         "-r",
         "--requirements",
         metavar="FILE",
         help="Install packages listed in the given requirements file",
     )
-    install_parser.add_argument(
+    parser.add_argument(
         "--venv",
         metavar="PATH",
         default=".venv",
         help="Path to the project-local virtual environment (default: .venv)",
     )
-
-    # --- venv --------------------------------------------------------------
-    venv_parser = subparsers.add_parser(
-        "venv",
-        help="Proxy to 'uv venv' (creates/manages virtual environments)",
-        description="Pass through arguments directly to 'uv venv'.",
-    )
-    venv_parser.add_argument(
-        "uv_venv_args",
-        nargs="*",
-        metavar="ARG",
-        help="Arguments forwarded to 'uv venv' (example: .venv --python 3.12)",
-    )
-
     return parser
+
+
+def _run_uv(args: list[str]) -> int:
+    uv = _uv_executable()
+    subprocess.run([uv, *args], check=True)
+    return 0
 
 
 def main(argv=None) -> int:
@@ -85,14 +84,22 @@ def main(argv=None) -> int:
     int
         Exit code (0 on success, non-zero on failure).
     """
-    parser = _build_parser()
-    args, unknown_args = parser.parse_known_args(argv)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    root_parser = _build_root_parser()
 
-    if args.command == "install":
-        if unknown_args:
-            parser.error(f"unrecognized arguments: {' '.join(unknown_args)}")
+    if not argv:
+        root_parser.print_help()
+        return 0
+
+    if argv[0] in {"-h", "--help"}:
+        root_parser.print_help()
+        return 0
+
+    if argv[0] == "install":
+        parser = _build_install_parser()
+        args = parser.parse_args(argv[1:])
         if not args.packages and not args.requirements:
-            _build_parser().parse_args(["install", "--help"], namespace=None)
+            parser.parse_args(["--help"], namespace=None)
             # parse_args above will raise SystemExit via --help; this line is
             # a safety net in case that behaviour changes.
             return 1  # pragma: no cover
@@ -116,23 +123,15 @@ def main(argv=None) -> int:
             f"{pkg_word} into '{args.venv}'."
         )
         return 0
-    if args.command == "venv":
-        try:
-            uv = _uv_executable()
-            subprocess.run(
-                [uv, "venv", *args.uv_venv_args, *unknown_args],
-                check=True,
-            )
-        except FileNotFoundError as exc:
-            print(f"pepip: error: {exc}", file=sys.stderr)
-            return 1
-        except Exception as exc:  # noqa: BLE001
-            print(f"pepip: error: {exc}", file=sys.stderr)
-            return 1
-        return 0
 
-    parser.print_help()
-    return 0
+    try:
+        return _run_uv(argv)
+    except FileNotFoundError as exc:
+        print(f"pepip: error: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:  # noqa: BLE001
+        print(f"pepip: error: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

@@ -11,12 +11,11 @@ import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence
 
+from _smoke_matrix_utils import delete_dir
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import IntPrompt
 from rich.table import Table
-
-from _smoke_matrix_utils import delete_dir
 
 CONSOLE = Console()
 PYTHON_VERSION = "3.10"
@@ -273,7 +272,10 @@ def reset_venv(work_dir: Path, selected_mode: str) -> None:
 
     if creation_mode == "uv":
         ensure_binary("uv")
-        run(["uv", "venv", "--clear", "--python", PYTHON_VERSION, str(target)], cwd=work_dir)
+        run(
+            ["uv", "venv", "--clear", "--python", PYTHON_VERSION, str(target)],
+            cwd=work_dir,
+        )
     elif creation_mode == "pepip":
         run([sys.executable, "-m", "venv", str(target)], cwd=work_dir)
     else:
@@ -294,7 +296,8 @@ def package_batches(
         raise ValueError("--start must be greater than or equal to 0.")
     if start_index > len(packages):
         raise ValueError(
-            f"--start must be less than or equal to the package count ({len(packages)})."
+            "--start must be less than or equal to the package count "
+            f"({len(packages)})."
         )
     if limit is not None and limit < 0:
         raise ValueError("--limit must be greater than or equal to 0.")
@@ -515,7 +518,8 @@ def main() -> int:
         raise ValueError("--start must be greater than or equal to 0.")
     if args.start > len(packages):
         raise ValueError(
-            f"--start must be less than or equal to the package count ({len(packages)})."
+            f"--start must be less than or equal to the package count "
+            f"({len(packages)})."
         )
     if args.limit is not None and args.limit < 0:
         raise ValueError("--limit must be greater than or equal to 0.")
