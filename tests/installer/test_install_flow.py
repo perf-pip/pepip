@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -223,11 +224,18 @@ def test_install_in_existing_uv_environment_is_importable(tmp_path: Path) -> Non
                 with patch("subprocess.run", side_effect=fake_run):
                     install(packages=["requests"], local_venv=local_venv)
 
+    import_env = dict(os.environ)
+    existing_pythonpath = import_env.get("PYTHONPATH")
+    import_env["PYTHONPATH"] = (
+        str(local_site)
+        if not existing_pythonpath
+        else os.pathsep.join([str(local_site), existing_pythonpath])
+    )
     import_check = subprocess.run(
         [sys.executable, "-c", "import requests; print(requests.__version__)"],
         capture_output=True,
         text=True,
-        env={"PYTHONPATH": str(local_site)},
+        env=import_env,
         check=True,
     )
     assert import_check.stdout.strip() == "2.26.0"
