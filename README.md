@@ -58,7 +58,7 @@ project-c/.venv/  →  numpy 2.0 (symlink)  torch 2.5 (symlink) → ~bytes
 | **Install speed (repeat packages)**  |    🟡    |  🟡   |  🟢   |
 | **Virtual env compatibility**        |    ✅    |  ❌   |  ✅   |
 | **Multiple versions for each env**   |    ✅    |  ❌   |  ✅   |
-| **Tool installation size**           |    🟢    |  🔴   |  🟢   |
+| **Installation size**                |    🟢    |  🔴   |  🟢   |
 
 Key differences:
 - **Speed and download size**: While uv and conda cache helps, they still copy packages. If cache is cleared, they redownload. pepip only downloads once per version, then symlinks for every project, allowing instant installs for subsequent projects.
@@ -237,7 +237,7 @@ python eval/benchmark.py --no-cleanup
 
 More usage instructions are at [docs/USAGE.md](https://github.com/perf-pip/pepip/blob/main/docs/USAGE.md).
 
-Documentation related to production readiness is at [docs/Production_readiness.md](https://github.com/perf-pip/pepip/blob/main/docs/Production_readiness.md).
+Documentation related to production readiness is at [docs/Production_Tests.md](https://github.com/perf-pip/pepip/blob/main/docs/Production_Tests.md).
 
 
 ---

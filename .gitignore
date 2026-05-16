@@ -3,7 +3,6 @@ archive*
 TODO*.md
 .codex
 .benchmarks/
-uv.lock
 scripts/*results.tsv
 scripts/uv_repos_failed.txt
 # scripts/uv_repos.txt

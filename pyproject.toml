@@ -4,16 +4,19 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pepip"
-version = "0.0.8"
+version = "0.0.9"
 description = "Shared global environment package installer using symlinks — like pnpm for Python"
 readme = "README.md"
+authors = [{ name = "Praneeth Vadlapati", email = "praneeth.vad@gmail.com" }]
 requires-python = ">=3.8"
-license = { text = "MIT" }
-keywords = ["pip", "package-manager", "virtual-environment", "symlinks", "uv", "coenv"]
+license="MIT OR Apache-2.0"
+license-files = ["LICENSE-APACHE", "LICENSE-MIT"]
+keywords = ["pip", "package-manager", "virtual-environment", "uv", "requirements", "packaging"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -26,7 +29,7 @@ classifiers = [
     "Topic :: System :: Systems Administration",
 ]
 dependencies = [
-    "uv>=0.4.0",
+    "uv>=0.4.0,<0.12.0",
 ]
 
 [project.optional-dependencies]
@@ -52,6 +55,9 @@ pepip = "pepip.cli:main"
 [project.urls]
 Homepage = "https://github.com/perf-pip/pepip"
 Issues = "https://github.com/perf-pip/pepip/issues"
+Documentation = "https://github.com/perf-pip/pepip"
+Releases = "https://github.com/perf-pip/pepip/releases"
+# Documentation = "https://perf-pip.github.io/"
 
 [tool.hatch.build.targets.wheel]
 packages = ["pepip"]

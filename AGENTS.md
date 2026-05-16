@@ -27,30 +27,46 @@ Given `pepip install ...`:
 
 - `pepip/installer.py`
 	- Core logic: venv creation, package install, site-packages detection,
-		package-version storage, symlink linking.
+		package-version storage, stale metadata cleanup, symlink linking.
 	- Main public API: `install(...)`.
 - `pepip/cli.py`
 	- CLI parser + command dispatch.
+	- `install` is handled by pepip; every other command is forwarded to `uv`.
 	- Script entry point `pepip = pepip.cli:main`.
-- `tests/test_installer.py`
-	- Unit tests for installer helpers and integration-style install behavior
-		with `subprocess.run` mocked.
-- `tests/test_cli.py`
-	- CLI behavior tests (success paths, help, error handling, messages).
+- `pepip/__init__.py`
+	- Package metadata module.
+- `tests/installer/`
+	- Installer-focused test suite split by concern:
+		- `test_core_helpers.py`
+		- `test_distribution_metadata.py`
+		- `test_install_flow.py`
+		- `test_link_packages.py`
+		- `test_stale_distribution_links.py`
+		- `test_store.py`
+		- `test_venv_management.py`
+	- Shared helpers: `tests/installer/helpers.py`.
+- `tests/cli/`
+	- CLI behavior tests, including `install` handling and uv passthrough:
+		- `test_install_command.py`
+		- `test_uv_passthrough_commands.py`
 - `eval/benchmark.py`
 	- Performance and disk usage comparison of pepip vs plain uv workflows.
 - `test-scripts/`
 	- Higher-level validation and experiment scripts beyond the unit suite.
-	- Canonical experiment inventory: `docs/Production_readiness.md`.
+	- Canonical experiment inventory: `docs/Production_Tests.md`.
 - `README.md`
 	- User-facing overview, setup, usage, benchmark examples.
+- `docs/USAGE.md`
+	- Development notes and CLI behavior summary, including Docker-oriented usage.
 
 ## 4) Runtime and Build Facts
 
 - Python: `>=3.8` (see `pyproject.toml`).
 - Build backend: `hatchling`.
-- Runtime dependency: `uv>=0.11.0`.
+- Runtime dependency: `uv>=0.4.0`.
 - Test framework: `pytest`.
+- Optional test extras: `pytest-cov`, `pytest-mock`.
+- Dev tooling declared in `pyproject.toml`: `black`, `isort`, `mypy`, `ruff`, `rich`.
 - Linting configured with Ruff rules `E`, `F`, `W`.
 - Supported OS targets: Linux, macOS, and Windows.
 
@@ -71,8 +87,10 @@ Given `pepip install ...`:
 		store.
 - Package store
 	- Computed under `PEPIP_HOME / "packages"`.
-	- Scoped by the build interpreter ABI/platform so compiled wheels are not
-		mixed across incompatible Python runtimes.
+	- Scoped by interpreter cache tag / platform / machine so compiled wheels are
+		not mixed across incompatible Python runtimes.
+	- Resolution prefers the local venv interpreter when that venv already
+		exists; otherwise pepip falls back to the global build venv interpreter.
 - Local venv
 	- Defaults to `.venv` unless overridden by `--venv`.
 
@@ -100,6 +118,16 @@ Given `pepip install ...`:
 	 - `_site_packages(...)` prefers querying the venv's own Python via
 		 `sysconfig.get_path('purelib')`.
 
+7. **Stale distribution metadata symlinks for relinked packages should be cleaned up.**
+	 - When a distribution is being relinked, old symlinked `.dist-info` /
+		 `.egg-info` entries for that same normalized distribution name may be
+		 removed.
+	 - Real directories/files must still be preserved.
+
+8. **Installer failures during staging must not create or mutate the local venv unnecessarily.**
+	 - `install(...)` stages packages first; if `uv pip install` fails, pepip
+		 should not proceed to local venv creation/linking.
+
 ## 7) CLI Contract
 
 Command shape:
@@ -107,11 +135,19 @@ Command shape:
 - `pepip install PACKAGE...`
 - `pepip install -r requirements.txt`
 - Optional: `--venv PATH`
+- Any non-`install` invocation is forwarded to `uv` unchanged, including:
+	- `pepip sync ...`
+	- `pepip run ...`
+	- `pepip venv ...`
+	- `pepip pip ...`
+	- `pepip --version`
 
 Expected behavior:
 
 - `pepip install` with neither packages nor `-r` shows install help and exits
 	non-zero (via argparse help flow).
+- `pepip` with no arguments shows top-level help and exits `0`.
+- Top-level `--help` shows top-level help and exits `0`.
 - Installer exceptions are surfaced as user-friendly stderr lines:
 	- `FileNotFoundError` -> exit code `1`.
 	- Other exceptions -> exit code `1`.
@@ -143,13 +179,13 @@ test-scripts/pepip_repo_tester.sh
 If changing CLI behavior, run at least:
 
 ```bash
-pytest tests/test_cli.py
+pytest tests/cli
 ```
 
 If changing installer behavior, run at least:
 
 ```bash
-pytest tests/test_installer.py
+pytest tests/installer
 ```
 
 ## 9) Safe Change Strategy for Agents
@@ -172,7 +208,7 @@ When adding features, consider whether they affect:
 
 If the change touches validation workflows or experiment interpretation, also update:
 
-- `docs/Production_readiness.md`
+- `docs/Production_Tests.md`
 - `test-scripts/README.md`
 
 ## 10) Known Limitations / Design Tradeoffs
@@ -182,10 +218,12 @@ If the change touches validation workflows or experiment interpretation, also up
 	`Scripts` directory.
 - Namespace packages can still need special handling if multiple distributions
 	own the same top-level package directory.
+- Non-`install` commands are delegated to `uv`; pepip is not implementing the
+	full uv command surface itself.
 
 ## 11) test-scripts Experiment Map
 
-Use `docs/Production_readiness.md` as the canonical description. The main experiments in `test-scripts/` are:
+Use `docs/Production_Tests.md` as the canonical description. The main experiments in `test-scripts/` are:
 
 - `test_uv_versions.sh` and `test_uv_versions_direct.sh`
 	- `uv` compatibility matrix and direct CLI/source validation across `uv` versions.
@@ -205,18 +243,33 @@ Use `docs/Production_readiness.md` as the canonical description. The main experi
 
 ## 12) Quick Task Routing for Future Agents
 
-- "CLI flags/help/output wrong" -> inspect `pepip/cli.py` + `tests/test_cli.py`.
+- "CLI flags/help/output wrong" -> inspect `pepip/cli.py` +
+	`tests/cli/test_install_command.py` and
+	`tests/cli/test_uv_passthrough_commands.py`.
 - "Symlink behavior broken" -> inspect `pepip/installer.py` +
-	`tests/test_installer.py` (`TestLinkPackages`).
+	`tests/installer/test_link_packages.py`.
 - "Install command not invoking uv correctly" -> inspect `install(...)` command
-	assembly and tests around requirements handling.
+	assembly and `tests/installer/test_install_flow.py`.
+- "Store scoping / package version persistence wrong" -> inspect
+	`_package_store_root(...)`, `_store_distribution(...)`, and
+	`tests/installer/test_store.py`.
+- "Distribution metadata or top-level ownership wrong" -> inspect
+	`_metadata_from_dist_info(...)`, `_record_roots(...)`, and
+	`tests/installer/test_distribution_metadata.py`.
+- "Old `.dist-info` links are lingering or wrong version metadata survives" ->
+	inspect `_remove_stale_distribution_links(...)` and
+	`tests/installer/test_stale_distribution_links.py`.
+- "Local/global venv creation behavior wrong" -> inspect
+	`ensure_global_venv(...)`, `ensure_local_venv(...)`, and
+	`tests/installer/test_venv_management.py`.
 - "Performance/disk comparison question" -> inspect and run `eval/benchmark.py`.
 - "uv version compatibility question" -> inspect `test-scripts/test_uv_versions.sh`
 	+ `test-scripts/test_uv_versions_direct.sh`.
 - "Real package install smoke failure" -> inspect `test-scripts/install_smoke_matrix.py`
 	+ `test-scripts/_smoke_matrix_utils.py`.
+- "Docker / host-mounted shared store usage" -> inspect `docs/USAGE.md`.
 - "External repository experiment or pass-rate question" -> inspect
-	`docs/Production_readiness.md`, `test-scripts/uv_repo_tester.sh`,
+	`docs/Production_Tests.md`, `test-scripts/uv_repo_tester.sh`,
 	`test-scripts/pepip_repo_tester.sh`, and the `*_repos_*.txt` files.
 
 ## 13) Definition of Done for Agent Changes
@@ -228,5 +281,8 @@ Before finishing:
 3. CLI behavior remains consistent with section 7, unless intentionally changed
 	 with tests.
 4. User-facing changes are reflected in `README.md` when appropriate.
-5. Validation or experiment changes are reflected in `docs/Production_readiness.md`
+5. Validation or experiment changes are reflected in `docs/Production_Tests.md`
 	 and `test-scripts/README.md` when appropriate.
+
+Note:
+When you change something that is covered in README.md or AGENTS.md, edit the files as well.
