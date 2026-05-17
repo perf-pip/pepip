@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Install pinned packages in batches and run smoke checks in uv and pepip modes."""
+"""Run a pinned package smoke matrix for uv and pepip workflows.
+
+This script installs a curated set of package versions in batches, then executes
+simple import and runtime checks per package to validate that installations are
+usable. It supports both uv-only and pepip-backed installs so we can compare
+behavior and spot regressions across modes.
+"""
 
 from __future__ import annotations
 

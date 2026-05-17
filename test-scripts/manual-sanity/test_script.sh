@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Test by installing the same packages in multiple folders,
-# allowing to check the storage used by each folder.
+# Install the same packages across multiple folders to compare disk usage.
+#
+# Creates a set of temp project directories, installs numpy and pandas using
+# pepip, then shows per-directory storage consumption to highlight symlink
+# savings versus fully duplicated environments.
 
 WORK_DIR="${TMPDIR:-/tmp}/pepip-test"
 

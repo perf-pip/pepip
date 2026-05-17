@@ -1,4 +1,9 @@
-"""Command-line interface for pepip."""
+"""Command-line interface for pepip.
+
+This module defines the top-level and install subcommand parsers, routes
+`pepip install` to the internal installer, and forwards all other commands to
+`uv` so pepip can act as a drop-in CLI wrapper.
+"""
 
 from __future__ import annotations
 

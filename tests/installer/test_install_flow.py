@@ -1,4 +1,8 @@
-"""Integration-style installer tests with subprocess mocked."""
+"""Integration-style installer tests with subprocess mocked.
+
+Exercises the end-to-end install flow, including staging, linking, and error
+handling, without invoking real uv commands.
+"""
 
 from __future__ import annotations
 

@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Test pepip install flow against a wide uv version matrix.
+# Run pepip tests across a matrix of uv versions using per-version venvs.
+#
+# This script installs uv into isolated virtual environments for each version,
+# runs the pepip test suite (or a configurable pytest target), and reports any
+# failures so compatibility regressions are caught early.
+#
 # Usage:
 #   test-scripts/uv-compatibility/test_uv_versions.sh
 #   test-scripts/uv-compatibility/test_uv_versions.sh 0.4.30 0.5.22 0.6.17

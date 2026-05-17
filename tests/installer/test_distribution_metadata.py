@@ -1,4 +1,8 @@
-"""Tests for distribution metadata and ownership discovery."""
+"""Tests for distribution metadata and ownership discovery.
+
+Validates normalization rules, metadata parsing from dist-info entries, and
+record processing so pepip can reliably map distributions to their files.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,8 @@
-"""Tests for immutable package store behavior."""
+"""Tests for immutable package store behavior.
+
+Focuses on store path scoping, safe copying behavior, and distribution storage
+rules to ensure the shared store remains consistent and immutable.
+"""
 
 from __future__ import annotations
 

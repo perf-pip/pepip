@@ -1,4 +1,8 @@
-"""Shared test helpers for installer tests."""
+"""Shared test helpers for installer-focused tests.
+
+Provides utilities for symlink capability detection, test site-packages setup,
+and generation of fake distributions used across the installer test suite.
+"""
 
 from __future__ import annotations
 

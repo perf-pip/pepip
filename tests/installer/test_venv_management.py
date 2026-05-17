@@ -1,4 +1,8 @@
-"""Tests for installer venv creation helpers."""
+"""Tests for installer virtual environment management helpers.
+
+Ensures that global and local venv creation is idempotent and that uv is invoked
+correctly when a venv does not yet exist.
+"""
 
 from __future__ import annotations
 

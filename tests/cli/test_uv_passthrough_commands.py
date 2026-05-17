@@ -1,4 +1,8 @@
-"""Tests for pepip CLI passthrough commands."""
+"""Tests for pepip CLI passthrough commands.
+
+Validates that non-install commands are forwarded to uv with the expected
+arguments and that user-facing help paths behave correctly.
+"""
 
 from __future__ import annotations
 

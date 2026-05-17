@@ -1,4 +1,8 @@
-"""Tests for link_packages behavior and invariants."""
+"""Tests for link_packages behavior and invariants.
+
+Confirms that symlink creation, replacement, and non-overwrite rules are
+respected when linking packages into a local venv site-packages directory.
+"""
 
 from __future__ import annotations
 

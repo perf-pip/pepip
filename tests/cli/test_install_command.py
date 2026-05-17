@@ -1,4 +1,8 @@
-"""Tests for pepip.cli install command."""
+"""Tests for the pepip install CLI command.
+
+Covers argument parsing, package and requirements handling, venv selection,
+and user-facing error reporting for the install subcommand.
+"""
 
 from __future__ import annotations
 

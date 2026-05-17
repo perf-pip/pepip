@@ -1,4 +1,9 @@
-"""Filesystem helpers for package smoke tests."""
+"""Filesystem helpers for the package smoke matrix scripts.
+
+These utilities provide safe directory cleanup helpers that are resilient to
+symlinks and partially removed trees. They are used by the smoke matrix scripts
+to reset temporary working directories between runs.
+"""
 
 import shutil
 from pathlib import Path

@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Test the usage of different package versions of numpy and pandas in different folders.
+# Validate that separate project folders can use different package versions.
+#
+# This script creates two project directories, installs different numpy/pandas
+# versions with pepip, and then prints versions from each venv to confirm
+# isolation and correct linking behavior.
 
 venv_python() {
   local venv_dir="$1"

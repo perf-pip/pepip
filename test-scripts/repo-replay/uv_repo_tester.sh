@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Simple uv repo tester.
-# Flow per repo:
-#   1. Clone repo
-#   2. cd into repo
-#   3. Create uv venv in .venv at the repo root
-#   4. Install project/dependencies using uv commands
-#   5. Install pytest-related packages using uv commands
-#   6. Run pytest using the .venv Python
-#   7. Record successes immediately and skip them on later runs
+# Replay a repo list with uv to establish a baseline success set.
+#
+# For each repo, this script clones the repo, creates a uv venv, installs
+# dependencies plus pytest tooling, runs tests, and records successes so that
+# later pepip runs can focus only on repos that already passed with uv.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"

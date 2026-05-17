@@ -1,4 +1,8 @@
-"""Tests for cleanup of stale distribution metadata links."""
+"""Tests for cleanup of stale distribution metadata links.
+
+Verifies that outdated or incorrect metadata symlinks are removed while real
+directories and unrelated entries remain untouched.
+"""
 
 from __future__ import annotations
 

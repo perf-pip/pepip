@@ -43,7 +43,7 @@ pytest
 test-scripts/uv-compatibility/test_uv_versions.sh
 
 # Run the package smoke matrix in pepip mode.
-python3 test-scripts/package-smoke/install_smoke_matrix.py --mode pepip --batch-size 3
+python test-scripts/package-smoke/install_smoke_matrix.py --mode pepip --batch-size 3
 
 # Run a external-repository baseline and replay.
 test-scripts/repo-replay/pepip_repo_tester.sh
@@ -61,3 +61,5 @@ open Git Bash from the repository root, and run the same commands shown above.
 PowerShell and `cmd.exe` versions are not included. If you love native
 PowerShell or CMD scripts, please create an
 [Issue](https://github.com/perf-pip/pepip/issues).
+
+Only the test-scripts require Git Bash. The `pepip` tool itself works in PowerShell and CMD, without Git Bash.

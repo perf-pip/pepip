@@ -1,4 +1,9 @@
-"""Tests for low-level installer helpers."""
+"""Tests for low-level installer helper functions.
+
+These tests validate platform-specific path handling, uv discovery behavior,
+and site-packages resolution so the installer can operate correctly across
+different environments.
+"""
 
 from __future__ import annotations
 

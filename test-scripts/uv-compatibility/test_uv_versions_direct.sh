@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# This version of the script installs "uv" directly
-# without installing into a virtual environment.
-
-# Test pepip install flow against a wide uv version matrix.
+# Run pepip tests across a matrix of uv versions installed directly on PATH.
+#
+# This variant installs uv into the active Python environment instead of
+# creating per-version venvs. It is useful for quick checks in CI or local
+# environments where creating many venvs is undesirable.
+#
 # Usage:
 #   test-scripts/uv-compatibility/test_uv_versions_direct.sh
 #   test-scripts/uv-compatibility/test_uv_versions_direct.sh 0.4.30 0.5.22 0.6.17

@@ -1,4 +1,8 @@
-"""pepip — shared package-version store installer using symlinks."""
+"""pepip package metadata and public API exports.
+
+This module exposes the top-level `install` entry point and version metadata
+for the pepip CLI while keeping the public surface small and stable.
+"""
 
 __version__ = "0.0.1"
 __all__ = ["install"]
