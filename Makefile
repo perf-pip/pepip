@@ -1,5 +1,5 @@
 PYTHON ?= python3
-SOURCE_DIRS := pepip tests eval scripts
+SOURCE_DIRS := pepip tests eval test-scripts
 
 .PHONY: format format-check lint test test-cli test-installer quality
 

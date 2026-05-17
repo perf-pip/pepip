@@ -1,3 +1,5 @@
+"""Filesystem helpers for package smoke tests."""
+
 import shutil
 from pathlib import Path
 

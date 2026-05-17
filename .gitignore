@@ -3,11 +3,11 @@ archive*
 TODO*.md
 .codex
 .benchmarks/
-scripts/*results.tsv
-scripts/uv_repos_failed.txt
-# scripts/uv_repos.txt
-scripts/pepip_repos_failed.txt
-# scripts/pepip_repos.txt
+**/*results.tsv
+**/uv_repos_failed.txt
+# **/uv_repos.txt
+**/remove_finished.py
+**/sort-repos.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

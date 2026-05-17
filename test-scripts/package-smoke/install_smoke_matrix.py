@@ -9,15 +9,17 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from textwrap import dedent
 from typing import Dict, Iterable, List, Optional, Sequence
 
-from _smoke_matrix_utils import delete_dir
+from _smoke_matrix_utils import delete_dir  # pylint: disable=import-error
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import IntPrompt
 from rich.table import Table
 
 CONSOLE = Console()
+ROOT_DIR = Path(__file__).resolve().parents[2]
 PYTHON_VERSION = "3.10"
 VENV_DIRNAME = ".venv"
 
@@ -51,160 +53,212 @@ DEFAULT_PINNED_VERSIONS = {
 }
 
 SMOKE_CODE_BY_PACKAGE = {
-    "numpy": r"""
-import numpy as np
-arr = np.array([1, 2, 3, 4], dtype=np.float64)
-assert np.isclose(arr.mean(), 2.5)
-""",
-    "pandas": r"""
-import pandas as pd
-frame = pd.DataFrame({"x": [1, 2], "y": [10, 20]})
-assert frame["y"].sum() == 30
-""",
-    "requests": r"""
-import requests
-req = requests.Request("GET", "https://example.com")
-prepared = req.prepare()
-assert prepared.method == "GET"
-""",
-    "scipy": r"""
-import numpy as np
-from scipy import linalg
-mat = np.array([[2.0, 0.0], [0.0, 5.0]])
-inv = linalg.inv(mat)
-assert np.allclose(inv, np.array([[0.5, 0.0], [0.0, 0.2]]))
-""",
-    "matplotlib": r"""
-import matplotlib
-assert matplotlib.__version__
-""",
-    "scikit-learn": r"""
-import numpy as np
-from sklearn.linear_model import LinearRegression
-X = np.array([[1], [2], [3], [4]], dtype=np.float64)
-y = np.array([2, 4, 6, 8], dtype=np.float64)
-model = LinearRegression().fit(X, y)
-assert np.isclose(model.coef_[0], 2.0)
-""",
-    "sqlalchemy": r"""
-from sqlalchemy import create_engine, text
-engine = create_engine("sqlite:///:memory:")
-with engine.connect() as conn:
-    value = conn.execute(text("SELECT 42")).scalar_one()
-assert value == 42
-""",
-    "fastapi": r"""
-import fastapi
-app = fastapi.FastAPI()
+    "numpy": dedent(
+        """
+        import numpy as np
+        arr = np.array([1, 2, 3, 4], dtype=np.float64)
+        assert np.isclose(arr.mean(), 2.5)
+        """
+    ),
+    "pandas": dedent(
+        """
+        import pandas as pd
+        frame = pd.DataFrame({"x": [1, 2], "y": [10, 20]})
+        assert frame["y"].sum() == 30
+        """
+    ),
+    "requests": dedent(
+        """
+        import requests
+        req = requests.Request("GET", "https://example.com")
+        prepared = req.prepare()
+        assert prepared.method == "GET"
+        """
+    ),
+    "scipy": dedent(
+        """
+        import numpy as np
+        from scipy import linalg
+        mat = np.array([[2.0, 0.0], [0.0, 5.0]])
+        inv = linalg.inv(mat)
+        assert np.allclose(inv, np.array([[0.5, 0.0], [0.0, 0.2]]))
+        """
+    ),
+    "matplotlib": dedent(
+        """
+        import matplotlib
+        assert matplotlib.__version__
+        """
+    ),
+    "scikit-learn": dedent(
+        """
+        import numpy as np
+        from sklearn.linear_model import LinearRegression
+        X = np.array([[1], [2], [3], [4]], dtype=np.float64)
+        y = np.array([2, 4, 6, 8], dtype=np.float64)
+        model = LinearRegression().fit(X, y)
+        assert np.isclose(model.coef_[0], 2.0)
+        """
+    ),
+    "sqlalchemy": dedent(
+        """
+        from sqlalchemy import create_engine, text
+        engine = create_engine("sqlite:///:memory:")
+        with engine.connect() as conn:
+            value = conn.execute(text("SELECT 42")).scalar_one()
+        assert value == 42
+        """
+    ),
+    "fastapi": dedent(
+        """
+        import fastapi
+        app = fastapi.FastAPI()
 
-@app.get("/ping")
-def ping():
-    return {"ok": True}
+        @app.get("/ping")
+        def ping():
+            return {"ok": True}
 
-assert any(route.path == "/ping" for route in app.routes)
-""",
-    "click": r"""
-import click
+        assert any(route.path == "/ping" for route in app.routes)
+        """
+    ),
+    "click": dedent(
+        """
+        import click
 
-@click.command()
-def cmd():
-    pass
+        @click.command()
+        def cmd():
+            pass
 
-assert cmd.name == "cmd"
-""",
-    "pydantic": r"""
-import pydantic
+        assert cmd.name == "cmd"
+        """
+    ),
+    "pydantic": dedent(
+        """
+        import pydantic
 
-class User(pydantic.BaseModel):
-    name: str
+        class User(pydantic.BaseModel):
+            name: str
 
-u = User(name="alice")
-assert u.name == "alice"
-""",
-    "httpx": r"""
-import httpx
-client = httpx.Client()
-request = client.build_request("GET", "https://example.com")
-assert request.method == "GET"
-client.close()
-""",
-    "rich": r"""
-from rich.console import Console
-console = Console(record=True)
-console.print("ok")
-assert "ok" in console.export_text()
-""",
-    "polars": r"""
-import polars as pl
-df = pl.DataFrame({"a": [1, 2, 3]})
-assert df.shape == (3, 1)
-""",
-    "pillow": r"""
-from PIL import Image
-img = Image.new("RGB", (10, 10))
-assert img.size == (10, 10)
-""",
-    "pyyaml": r"""
-import yaml
-obj = yaml.safe_load("a: 1")
-assert obj["a"] == 1
-""",
-    "jinja2": r"""
-from jinja2 import Template
-out = Template("Hello {{ name }}").render(name="world")
-assert out == "Hello world"
-""",
-    "aiohttp": r"""
-import aiohttp
-assert aiohttp.__version__
-""",
-    "sympy": r"""
-import sympy
-x = sympy.Symbol("x")
-expr = sympy.expand((x + 1) ** 2)
-assert str(expr) == "x**2 + 2*x + 1"
-""",
-    "openpyxl": r"""
-from openpyxl import Workbook
-wb = Workbook()
-ws = wb.active
-ws["A1"] = "ok"
-assert ws["A1"].value == "ok"
-""",
-    "networkx": r"""
-import networkx as nx
-G = nx.Graph()
-G.add_edge("a", "b")
-assert nx.has_path(G, "a", "b")
-""",
-    "tqdm": r"""
-from tqdm import tqdm
-assert tqdm is not None
-""",
-    "beautifulsoup4": r"""
-from bs4 import BeautifulSoup
-soup = BeautifulSoup("<html><body><p>ok</p></body></html>", "html.parser")
-assert soup.p.text == "ok"
-""",
-    "lxml": r"""
-from lxml import etree
-root = etree.fromstring(b"<root><child>ok</child></root>")
-assert root.findtext("child") == "ok"
-""",
-    "orjson": r"""
-import orjson
-data = orjson.loads(orjson.dumps({"x": 1}))
-assert data["x"] == 1
-""",
-    "python-dateutil": r"""
-from dateutil.parser import parse
-dt = parse("2026-01-01")
-assert dt.year == 2026
-""",
-    "uvicorn": r"""
-import uvicorn
-assert uvicorn.__version__
-""",
+        u = User(name="alice")
+        assert u.name == "alice"
+        """
+    ),
+    "httpx": dedent(
+        """
+        import httpx
+        client = httpx.Client()
+        request = client.build_request("GET", "https://example.com")
+        assert request.method == "GET"
+        client.close()
+        """
+    ),
+    "rich": dedent(
+        """
+        from rich.console import Console
+        console = Console(record=True)
+        console.print("ok")
+        assert "ok" in console.export_text()
+        """
+    ),
+    "polars": dedent(
+        """
+        import polars as pl
+        df = pl.DataFrame({"a": [1, 2, 3]})
+        assert df.shape == (3, 1)
+        """
+    ),
+    "pillow": dedent(
+        """
+        from PIL import Image
+        img = Image.new("RGB", (10, 10))
+        assert img.size == (10, 10)
+        """
+    ),
+    "pyyaml": dedent(
+        """
+        import yaml
+        obj = yaml.safe_load("a: 1")
+        assert obj["a"] == 1
+        """
+    ),
+    "jinja2": dedent(
+        """
+        from jinja2 import Template
+        out = Template("Hello {{ name }}").render(name="world")
+        assert out == "Hello world"
+        """
+    ),
+    "aiohttp": dedent(
+        """
+        import aiohttp
+        assert aiohttp.__version__
+        """
+    ),
+    "sympy": dedent(
+        """
+        import sympy
+        x = sympy.Symbol("x")
+        expr = sympy.expand((x + 1) ** 2)
+        assert str(expr) == "x**2 + 2*x + 1"
+        """
+    ),
+    "openpyxl": dedent(
+        """
+        from openpyxl import Workbook
+        wb = Workbook()
+        ws = wb.active
+        ws["A1"] = "ok"
+        assert ws["A1"].value == "ok"
+        """
+    ),
+    "networkx": dedent(
+        """
+        import networkx as nx
+        G = nx.Graph()
+        G.add_edge("a", "b")
+        assert nx.has_path(G, "a", "b")
+        """
+    ),
+    "tqdm": dedent(
+        """
+        from tqdm import tqdm
+        assert tqdm is not None
+        """
+    ),
+    "beautifulsoup4": dedent(
+        """
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup("<html><body><p>ok</p></body></html>", "html.parser")
+        assert soup.p.text == "ok"
+        """
+    ),
+    "lxml": dedent(
+        """
+        from lxml import etree
+        root = etree.fromstring(b"<root><child>ok</child></root>")
+        assert root.findtext("child") == "ok"
+        """
+    ),
+    "orjson": dedent(
+        """
+        import orjson
+        data = orjson.loads(orjson.dumps({"x": 1}))
+        assert data["x"] == 1
+        """
+    ),
+    "python-dateutil": dedent(
+        """
+        from dateutil.parser import parse
+        dt = parse("2026-01-01")
+        assert dt.year == 2026
+        """
+    ),
+    "uvicorn": dedent(
+        """
+        import uvicorn
+        assert uvicorn.__version__
+        """
+    ),
 }
 
 
@@ -250,6 +304,11 @@ def venv_env(work_dir: Path) -> Dict[str, str]:
     bin_dir = venv_path(work_dir) / scripts_dir
     env["VIRTUAL_ENV"] = str(venv_path(work_dir))
     env["PATH"] = f"{bin_dir}{os.pathsep}{env.get('PATH', '')}"
+    env["PYTHONPATH"] = (
+        f"{ROOT_DIR}{os.pathsep}{env['PYTHONPATH']}"
+        if env.get("PYTHONPATH")
+        else str(ROOT_DIR)
+    )
     return env
 
 
@@ -277,6 +336,7 @@ def reset_venv(work_dir: Path, selected_mode: str) -> None:
             cwd=work_dir,
         )
     elif creation_mode == "pepip":
+        # Create Python virtual environment using built-in venv module
         run([sys.executable, "-m", "venv", str(target)], cwd=work_dir)
     else:
         raise ValueError(
@@ -307,7 +367,8 @@ def package_batches(
         selected_packages = selected_packages[:limit]
 
     for start in range(0, len(selected_packages), batch_size):
-        yield list(selected_packages[start : start + batch_size])
+        end = start + batch_size
+        yield list(selected_packages[start:end])
 
 
 def package_name(spec: str) -> str:

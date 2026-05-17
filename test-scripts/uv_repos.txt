@@ -1,4 +1,0 @@
-# Repositories that document/use uv in setup/docs. Don't care popularity.
-# Hint: Use GitHub search: "uv pip" or "uv venv" in readme files or presence of "uv.lock".
-# Also use other ways.
-# Write as a list of URLs without labels or categories.

@@ -170,10 +170,11 @@ python eval/benchmark.py
 Optional higher-level validation:
 
 ```bash
-test-scripts/test_uv_versions.sh
-python3 test-scripts/install_smoke_matrix.py --mode pepip --batch-size 5
-test-scripts/uv_repo_tester.sh
-test-scripts/pepip_repo_tester.sh
+test-scripts/uv-compatibility/test_uv_versions.sh
+python3 test-scripts/package-smoke/install_smoke_matrix.py --mode pepip --batch-size 5
+cp test-scripts/repo-replay/uv_repos.txt /tmp/pepip-uv-repos.txt
+test-scripts/repo-replay/uv_repo_tester.sh --repos /tmp/pepip-uv-repos.txt
+test-scripts/repo-replay/pepip_repo_tester.sh
 ```
 
 If changing CLI behavior, run at least:
@@ -223,23 +224,28 @@ If the change touches validation workflows or experiment interpretation, also up
 
 ## 11) test-scripts Experiment Map
 
-Use `docs/Production_Tests.md` as the canonical description. The main experiments in `test-scripts/` are:
+Use `docs/Production_Tests.md` as the high-level description. The runnable
+instructions live in the folder READMEs under `test-scripts/`.
 
-- `test_uv_versions.sh` and `test_uv_versions_direct.sh`
+- `test-scripts/uv-compatibility/`
+	- `test_uv_versions.sh` and `test_uv_versions_direct.sh`
 	- `uv` compatibility matrix and direct CLI/source validation across `uv` versions.
-- `install_smoke_matrix.py` with `_smoke_matrix_utils.py`
+- `test-scripts/package-smoke/`
+	- `install_smoke_matrix.py` with `_smoke_matrix_utils.py`
 	- Pinned package install smoke matrix for `uv` mode and `pepip` mode.
-	- Result files: `results.tsv`, `pepip_results.tsv`.
-- `uv_repo_tester.sh`
+	- Creates or resets `./.venv` in the current working directory.
+- `test-scripts/repo-replay/`
+	- `uv_repo_tester.sh`
 	- External repository baseline with plain `uv`.
 	- Uses `uv_repos.txt` and writes `uv_repos_success.txt` / `uv_repos_failed.txt`.
-- `pepip_repo_tester.sh`
+	- `pepip_repo_tester.sh`
 	- External repository replay with `pepip` against the repositories that already passed with `uv`.
 	- Uses `uv_repos_success.txt` and writes `pepip_repos_success.txt` / `pepip_repos_failed.txt`.
-- `test_package_versions.sh` and `test_script.sh`
+	- Result files: `results.tsv`, `pepip_results.tsv`.
+	- Helpers: `remove_finished.py` and `sort-repos.py`.
+- `test-scripts/manual-sanity/`
+	- `test_package_versions.sh` and `test_script.sh`
 	- Small local manual sanity checks for version isolation and disk-usage behavior.
-- `remove_finished.py` and `sort-repos.py`
-	- Helpers for curating and rerunning the external repository experiment inputs/results.
 
 ## 12) Quick Task Routing for Future Agents
 
@@ -263,14 +269,17 @@ Use `docs/Production_Tests.md` as the canonical description. The main experiment
 	`ensure_global_venv(...)`, `ensure_local_venv(...)`, and
 	`tests/installer/test_venv_management.py`.
 - "Performance/disk comparison question" -> inspect and run `eval/benchmark.py`.
-- "uv version compatibility question" -> inspect `test-scripts/test_uv_versions.sh`
-	+ `test-scripts/test_uv_versions_direct.sh`.
-- "Real package install smoke failure" -> inspect `test-scripts/install_smoke_matrix.py`
-	+ `test-scripts/_smoke_matrix_utils.py`.
+- "uv version compatibility question" -> inspect
+	`test-scripts/uv-compatibility/test_uv_versions.sh` +
+	`test-scripts/uv-compatibility/test_uv_versions_direct.sh`.
+- "Real package install smoke failure" -> inspect
+	`test-scripts/package-smoke/install_smoke_matrix.py` +
+	`test-scripts/package-smoke/_smoke_matrix_utils.py`.
 - "Docker / host-mounted shared store usage" -> inspect `docs/USAGE.md`.
 - "External repository experiment or pass-rate question" -> inspect
-	`docs/Production_Tests.md`, `test-scripts/uv_repo_tester.sh`,
-	`test-scripts/pepip_repo_tester.sh`, and the `*_repos_*.txt` files.
+	`docs/Production_Tests.md`, `test-scripts/repo-replay/uv_repo_tester.sh`,
+	`test-scripts/repo-replay/pepip_repo_tester.sh`, and the
+	`test-scripts/repo-replay/*_repos_*.txt` files.
 
 ## 13) Definition of Done for Agent Changes
 
