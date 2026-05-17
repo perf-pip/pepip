@@ -9,7 +9,7 @@ set -euo pipefail
 #   4. Create uv venv in .venv at the repo root
 #   5. Install project/dependencies using pepip
 #   6. Install pytest-related packages using pepip
-#   7. Run pytest using .venv/bin/python
+#   7. Run pytest using the .venv Python
 #   8. Record successes immediately and skip them on later runs
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,7 +26,11 @@ elif [[ -n "${CONDA_PREFIX:-}" && -x "${CONDA_PREFIX}/bin/python3" ]]; then
   # subprocess-driven environment setup. Prefer the real interpreter.
   PYTHON_BIN="${CONDA_PREFIX}/bin/python3"
 else
-  PYTHON_BIN="python3"
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="python3"
+  else
+    PYTHON_BIN="python"
+  fi
 fi
 PEPIP_HOME_WAS_SET=0
 if [[ -n "${PEPIP_HOME:-}" ]]; then
@@ -48,7 +52,7 @@ Flow per repo:
   4. Create uv venv in .venv at the repo root
   5. Install project/dependencies using pepip
   6. Install pytest-related packages using pepip
-  7. Run pytest using .venv/bin/python
+  7. Run pytest using the .venv Python
   8. Record successes immediately and skip them on later runs
 
 Options:
@@ -178,6 +182,16 @@ clear_cache() {
   if [[ -d "${PEPIP_HOME}" ]]; then
     echo "Deleting PEPIP_HOME: ${PEPIP_HOME}"
     rm -rf "${PEPIP_HOME}"
+  fi
+}
+
+venv_python() {
+  local venv_dir="${1:-.venv}"
+  if [[ -x "${venv_dir}/Scripts/python.exe" ]]; then
+    # Support Windows' Git Bash
+    printf '%s\n' "${venv_dir}/Scripts/python.exe"
+  else
+    printf '%s\n' "${venv_dir}/bin/python"
   fi
 }
 
@@ -325,8 +339,10 @@ install_test_packages() {
 
 run_tests() {
   local log_file="$1"
+  local python_bin
+  python_bin="$(venv_python)"
   log_section "${log_file}" "uv: pytest"
-  run_pytest_logged "${log_file}" .venv/bin/python -m pytest -vv -ra --maxfail=1
+  run_pytest_logged "${log_file}" "${python_bin}" -m pytest -vv -ra --maxfail=1
 }
 
 echo "Repos file: ${REPOS_FILE}"

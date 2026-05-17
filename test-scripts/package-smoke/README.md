@@ -6,6 +6,12 @@ not cover, especially binary wheels and dependency-heavy packages.
 
 Pre-requisites: Python 3.10 is expected by default.
 
+On Windows, install [Git for Windows](https://git-scm.com/download/win) if you
+also plan to run the neighboring `.sh` validation scripts from Git Bash. This
+runner itself is Python-based. If you need native PowerShell or CMD versions of
+the Bash scripts, please create an
+[Issue](https://github.com/perf-pip/pepip/issues).
+
 ## Files
 
 - [`install_smoke_matrix.py`](install_smoke_matrix.py) is the runner.

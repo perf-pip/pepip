@@ -9,7 +9,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 WORK_DIR="${TMPDIR:-/tmp}/pepip-uv-version-matrix"
-PYTHON_BIN="${PYTHON:-python3}"
+if [[ -n "${PYTHON:-}" ]]; then
+  PYTHON_BIN="${PYTHON}"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="python3"
+else
+  PYTHON_BIN="python"
+fi
 PYTEST_TARGET="${PYTEST_TARGET:-tests}"
 
 # Versions chosen to span multiple uv release families.
@@ -30,6 +36,7 @@ DEFAULT_UV_VERSIONS=(
   "0.10.12"
   "0.11.0"
   "0.11.10"
+  "0.11.14"
 )
 
 if [[ "$#" -gt 0 ]]; then
@@ -49,6 +56,26 @@ mkdir -p "${WORK_DIR}"
 
 FAILURES=()
 
+venv_activate() {
+  local venv_dir="$1"
+  if [[ -f "${venv_dir}/Scripts/activate" ]]; then
+    # Support Windows' Git Bash
+    printf '%s\n' "${venv_dir}/Scripts/activate"
+  else
+    printf '%s\n' "${venv_dir}/bin/activate"
+  fi
+}
+
+venv_python() {
+  local venv_dir="$1"
+  if [[ -x "${venv_dir}/Scripts/python.exe" ]]; then
+    # Support Windows' Git Bash
+    printf '%s\n' "${venv_dir}/Scripts/python.exe"
+  else
+    printf '%s\n' "${venv_dir}/bin/python"
+  fi
+}
+
 for uv_version in "${UV_VERSIONS[@]}"; do
   echo
   echo "=== Testing uv==${uv_version} ==="
@@ -61,7 +88,7 @@ for uv_version in "${UV_VERSIONS[@]}"; do
 
   "${PYTHON_BIN}" -m venv "${venv_dir}"
   # shellcheck disable=SC1091
-  source "${venv_dir}/bin/activate"
+  source "$(venv_activate "${venv_dir}")"
 
   if ! python -m pip install --upgrade pip >/dev/null 2>&1; then
     FAILURES+=("uv==${uv_version} (failed to upgrade pip)")
@@ -99,7 +126,8 @@ for uv_version in "${UV_VERSIONS[@]}"; do
       exit 10
     fi
 
-    if ! ./.venv/bin/python -c "import idna; assert idna.__version__ == '3.10'"; then
+    project_python="$(venv_python "./.venv")"
+    if ! "${project_python}" -c "import idna; assert idna.__version__ == '3.10'"; then
       exit 11
     fi
   )

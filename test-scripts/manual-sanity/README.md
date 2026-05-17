@@ -15,6 +15,11 @@ Install `pepip` first, or run from an environment where the `pepip` command is a
 pip install -e .
 ```
 
+On Windows, install [Git for Windows](https://git-scm.com/download/win), open
+Git Bash from the repository root, and run the same `.sh` commands below. If
+you need native PowerShell or CMD versions, please create an
+[Issue](https://github.com/perf-pip/pepip/issues).
+
 Then, run the scripts:
 
 For disk-usage inspection:
@@ -27,4 +32,4 @@ For package version checks:
 test-scripts/manual-sanity/test_package_versions.sh
 ```
 
-Both scripts create and delete directories under `/tmp/pepip-test`.
+Both scripts create and delete directories under `${TMPDIR:-/tmp}/pepip-test`.

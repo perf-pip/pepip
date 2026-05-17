@@ -9,7 +9,12 @@ This folder runs real repositories through two install paths:
 Use this when you need broad compatibility confidence beyond the local unit
 suite and package smoke matrix.
 
-Pre-requisites: `git`, `rg`, and network access.
+Pre-requisites: `git`, `timeout`, `rg`, and network access.
+
+On Windows, install [Git for Windows](https://git-scm.com/download/win), open
+Git Bash from the repository root, and run the same `.sh` commands below. If
+you need native PowerShell or CMD versions, please create an
+[Issue](https://github.com/perf-pip/pepip/issues).
 
 ## Data Files
 

@@ -8,7 +8,7 @@ set -euo pipefail
 #   3. Create uv venv in .venv at the repo root
 #   4. Install project/dependencies using uv commands
 #   5. Install pytest-related packages using uv commands
-#   6. Run pytest using .venv/bin/python
+#   6. Run pytest using the .venv Python
 #   7. Record successes immediately and skip them on later runs
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,7 +32,7 @@ Flow per repo:
   3. Create uv venv in .venv at the repo root
   4. Install project/dependencies using uv commands
   5. Install pytest-related packages using uv commands
-  6. Run pytest using .venv/bin/python
+  6. Run pytest using the .venv Python
   7. Record successes immediately and skip them on later runs
 
 Options:
@@ -173,6 +173,15 @@ clear_uv_cache() {
   fi
 }
 
+venv_python() {
+  local venv_dir="${1:-.venv}"
+  if [[ -x "${venv_dir}/Scripts/python.exe" ]]; then
+    printf '%s\n' "${venv_dir}/Scripts/python.exe"
+  else
+    printf '%s\n' "${venv_dir}/bin/python"
+  fi
+}
+
 log_section() {
   local log_file="$1"
   local title="$2"
@@ -253,28 +262,32 @@ install_repo_with_uv() {
 
   if [[ -f pyproject.toml ]]; then
     # Simple order: try uv sync first, then editable install fallbacks.
+    local python_bin
+    python_bin="$(venv_python)"
     run_install_logged "${log_file}" uv sync --all-extras --dev && return 0
     run_install_logged "${log_file}" uv sync --dev && return 0
     run_install_logged "${log_file}" uv sync && return 0
-    run_install_logged "${log_file}" uv pip install --python .venv/bin/python -e '.[all]' && return 0
-    run_install_logged "${log_file}" uv pip install --python .venv/bin/python -e '.[test]' && return 0
-    run_install_logged "${log_file}" uv pip install --python .venv/bin/python -e '.[tests]' && return 0
-    run_install_logged "${log_file}" uv pip install --python .venv/bin/python -e '.[dev]' && return 0
-    run_install_logged "${log_file}" uv pip install --python .venv/bin/python -e . && return 0
+    run_install_logged "${log_file}" uv pip install --python "${python_bin}" -e '.[all]' && return 0
+    run_install_logged "${log_file}" uv pip install --python "${python_bin}" -e '.[test]' && return 0
+    run_install_logged "${log_file}" uv pip install --python "${python_bin}" -e '.[tests]' && return 0
+    run_install_logged "${log_file}" uv pip install --python "${python_bin}" -e '.[dev]' && return 0
+    run_install_logged "${log_file}" uv pip install --python "${python_bin}" -e . && return 0
     return 1
   fi
 
   local installed_any=0
+  local python_bin
+  python_bin="$(venv_python)"
   local req
   for req in requirements-dev.txt dev-requirements.txt requirements-test.txt requirements-tests.txt test-requirements.txt requirements.txt; do
     if [[ -f "${req}" ]]; then
       installed_any=1
-      run_install_logged "${log_file}" uv pip install --python .venv/bin/python -r "${req}" || return 1
+      run_install_logged "${log_file}" uv pip install --python "${python_bin}" -r "${req}" || return 1
     fi
   done
 
   if [[ -f setup.py || -f setup.cfg ]]; then
-    run_install_logged "${log_file}" uv pip install --python .venv/bin/python -e . || return 1
+    run_install_logged "${log_file}" uv pip install --python "${python_bin}" -e . || return 1
     installed_any=1
   fi
 
@@ -283,15 +296,19 @@ install_repo_with_uv() {
 
 install_test_packages() {
   local log_file="$1"
+  local python_bin
+  python_bin="$(venv_python)"
   log_section "${log_file}" "uv: install pytest tooling"
-  run_install_logged "${log_file}" uv pip install --python .venv/bin/python \
+  run_install_logged "${log_file}" uv pip install --python "${python_bin}" \
     pytest pytest-cov pytest-mock pytest-xdist
 }
 
 run_tests() {
   local log_file="$1"
+  local python_bin
+  python_bin="$(venv_python)"
   log_section "${log_file}" "uv: pytest"
-  run_pytest_logged "${log_file}" .venv/bin/python -m pytest -vv -ra --maxfail=1
+  run_pytest_logged "${log_file}" "${python_bin}" -m pytest -vv -ra --maxfail=1
 }
 
 echo "Repos file: ${REPOS_FILE}"

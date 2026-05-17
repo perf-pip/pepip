@@ -14,6 +14,8 @@ Run commands from the repository's root unless a folder README says otherwise.
 - `pepip` runnable from this checkout, or install it with `pip install -e .`.
 - For repository replay: `git`, `timeout`, `rg`, and network access.
 - For package smoke tests: Python 3.10 is expected by default.
+- On Windows, install [Git for Windows](https://git-scm.com/download/win) and
+  run the `.sh` scripts from Git Bash.
 
 ## Folders
 
@@ -34,6 +36,7 @@ Run commands from the repository's root unless a folder README says otherwise.
 
 ```bash
 # Fast project-level baseline.
+pip install -e ".[dev]"
 pytest
 
 # Check the supported uv version matrix.
@@ -43,8 +46,6 @@ test-scripts/uv-compatibility/test_uv_versions.sh
 python3 test-scripts/package-smoke/install_smoke_matrix.py --mode pepip --batch-size 3
 
 # Run a external-repository baseline and replay.
-test-scripts/repo-replay/uv_repo_tester.sh
-#     -> Creates list of repos in which uv tests are successful
 test-scripts/repo-replay/pepip_repo_tester.sh
 #     -> Uses the above list to test pepip and compare results with uv
 ```
@@ -52,4 +53,11 @@ test-scripts/repo-replay/pepip_repo_tester.sh
 For the high-level validation strategy and current experiment interpretation,
 see [`docs/Production_Tests.md`](../docs/Production_Tests.md).
 
-> Note: The above commands are designed for Linux and macOS. Windows compatibility of the same scripts using Git Bash is planned in an upcoming release. If you are interested in PowerShell/CMD versions, please create an [Issue](https://github.com/perf-pip/pepip/issues) for expedition. While the Bash scripts are not ready for Windows, the "pepip" package is compatible with Windows and tested properly.
+## Windows
+
+The Bash scripts support Windows through Git Bash. Install Git for Windows,
+open Git Bash from the repository root, and run the same commands shown above.
+
+PowerShell and `cmd.exe` versions are not included. If you love native
+PowerShell or CMD scripts, please create an
+[Issue](https://github.com/perf-pip/pepip/issues).

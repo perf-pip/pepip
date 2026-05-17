@@ -4,6 +4,11 @@ These scripts test `pepip` against multiple `uv` versions. Use them before a
 release, after changing installer command assembly, or when investigating a
 `uv` version-specific failure.
 
+On Windows, install [Git for Windows](https://git-scm.com/download/win), open
+Git Bash from the repository root, and run the same `.sh` commands below. If
+you need native PowerShell or CMD versions, please create an
+[Issue](https://github.com/perf-pip/pepip/issues).
+
 ## Scripts
 
 - [`test_uv_versions.sh`](test_uv_versions.sh) installs each `uv` version into
