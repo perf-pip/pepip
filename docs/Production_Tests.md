@@ -10,6 +10,7 @@ this page focuses on what each validation layer proves and when to use it.
 | --- | --- | --- |
 | Unit tests | Fast checks for CLI behavior, installer flow, store layout, metadata handling, and symlink invariants. | Every code change. |
 | uv compatibility | Confirms `pepip` works across supported `uv` release families. | Before releases or when changing installer command assembly. |
+| Python version matrix | Confirms `pepip` works across supported Python minor versions from 3.8 through 3.14. | Before releases or when changing interpreter-aware behavior. |
 | Package smoke matrix | Installs pinned real packages and runs lightweight import/runtime checks. | Before releases or after changing package storage/linking behavior. |
 | External repository replay | Compares plain `uv` installs with `pepip` installs on real projects. | Release validation and broad compatibility investigations. |
 | Manual sanity checks | Quick local experiments for version isolation and disk usage. | Ad hoc debugging only. |
@@ -21,6 +22,7 @@ Start with the fast tests, then add heavier checks as needed:
 ```bash
 pytest
 test-scripts/uv-compatibility/test_uv_versions.sh
+test-scripts/python-versions/test_python_versions.sh
 python3 test-scripts/package-smoke/install_smoke_matrix.py --mode pepip --batch-size 5
 cp test-scripts/repo-replay/uv_repos.txt /tmp/pepip-uv-repos.txt
 test-scripts/repo-replay/uv_repo_tester.sh --repos /tmp/pepip-uv-repos.txt --limit 10
@@ -31,6 +33,7 @@ For full instructions, prerequisites, and options, see:
 
 - [`test-scripts/README.md`](../test-scripts/README.md)
 - [`test-scripts/uv-compatibility/README.md`](../test-scripts/uv-compatibility/README.md)
+- [`test-scripts/python-versions/README.md`](../test-scripts/python-versions/README.md)
 - [`test-scripts/package-smoke/README.md`](../test-scripts/package-smoke/README.md)
 - [`test-scripts/repo-replay/README.md`](../test-scripts/repo-replay/README.md)
 - [`test-scripts/manual-sanity/README.md`](../test-scripts/manual-sanity/README.md)
@@ -80,6 +83,24 @@ Entrypoints:
 - [`test_uv_versions_direct.sh`](../test-scripts/uv-compatibility/test_uv_versions_direct.sh)
   installs `uv` into an isolated prefix and runs `pepip` from the source tree.
   Use this when debugging source import or `PATH` issues.
+
+## Python Version Matrix
+
+Folder: [`test-scripts/python-versions/`](../test-scripts/python-versions/)
+
+This layer checks that `pepip` remains compatible with Python 3.8 through
+3.14, matching the supported Python versions declared in `pyproject.toml`. The
+runner provisions those versions with `uv python install` instead of using
+local system interpreters. It matters because store scoping, virtual
+environment creation, and `site-packages` discovery all depend on the active
+interpreter.
+
+Entrypoint:
+
+- [`test_python_versions.sh`](../test-scripts/python-versions/test_python_versions.sh)
+  creates an isolated uv-managed Python installation and runner venv for each
+  Python version, installs `pepip[test]`, runs pytest, and verifies a real
+  `pepip install idna==3.10`.
 
 ## Package Smoke Matrix
 

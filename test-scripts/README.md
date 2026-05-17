@@ -14,6 +14,8 @@ Run commands from the repository's root unless a folder README says otherwise.
 - `pepip` runnable from this checkout, or install it with `pip install -e .`.
 - For repository replay: `git`, `timeout`, `rg`, and network access.
 - For package smoke tests: Python 3.10 is expected by default.
+- For Python version tests: `uv` downloads and manages Python 3.8 through 3.14
+  for the matrix; local Python installations are not used for those versions.
 - On Windows, install [Git for Windows](https://git-scm.com/download/win) and
   run the `.sh` scripts from Git Bash.
 
@@ -22,6 +24,10 @@ Run commands from the repository's root unless a folder README says otherwise.
 - [`uv-compatibility/`](uv-compatibility/) checks `pepip` against multiple `uv`
   versions.
   - This proved that `pepip` is compatible with a wide range of `uv` versions mentioned in pyproject.toml, including older versions.
+- [`python-versions/`](python-versions/) runs the test suite across Python 3.8
+  through 3.14.
+  - This proves that `pepip` remains compatible with every supported Python
+    minor version declared in `pyproject.toml`.
 - [`package-smoke/`](package-smoke/) installs pinned packages and runs import and basic usage checks.
   - This proved that `pepip` can install a wide range of packages similar to `uv`, making them usable.
   - This ensures that the packages and code which works using `uv` also works using `pepip`.
@@ -41,6 +47,9 @@ pytest
 
 # Check the supported uv version matrix.
 test-scripts/uv-compatibility/test_uv_versions.sh
+
+# Check the supported Python version matrix.
+test-scripts/python-versions/test_python_versions.sh
 
 # Run the package smoke matrix in pepip mode.
 python test-scripts/package-smoke/install_smoke_matrix.py --mode pepip --batch-size 3
