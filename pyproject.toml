@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pepip"
-version = "0.0.9"
+version = "0.0.10"
 description = "Shared global environment package installer using symlinks — like pnpm for Python"
 readme = "README.md"
 authors = [{ name = "Praneeth Vadlapati", email = "praneeth.vad@gmail.com" }]
