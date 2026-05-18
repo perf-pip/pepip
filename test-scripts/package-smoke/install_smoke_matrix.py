@@ -342,8 +342,16 @@ def reset_venv(work_dir: Path, selected_mode: str) -> None:
             cwd=work_dir,
         )
     elif creation_mode == "pepip":
-        # Create Python virtual environment using built-in venv module
-        run([sys.executable, "-m", "venv", str(target)], cwd=work_dir)
+        # Keep pepip mode on the same Python version as the uv matrix so the
+        # pinned package set stays wheel-only across host interpreters.
+        if sys.version_info[:2] == tuple(int(part) for part in PYTHON_VERSION.split(".")):
+            run([sys.executable, "-m", "venv", "--clear", str(target)], cwd=work_dir)
+        else:
+            ensure_binary("uv")
+            run(
+                ["uv", "venv", "--clear", "--python", PYTHON_VERSION, str(target)],
+                cwd=work_dir,
+            )
     else:
         raise ValueError(
             f"Unsupported virtual environment creation mode: {creation_mode}"
@@ -443,7 +451,7 @@ def install_and_smoke_batches_pepip(
     ):
         ui_header(f"Installing pepip batch {idx}", ", ".join(batch))
         run(
-            [sys.executable, "-m", "pepip.cli", "install", *batch],
+            [str(venv_python(work_dir)), "-m", "pepip.cli", "install", *batch],
             cwd=work_dir,
             env=venv_env(work_dir),
         )

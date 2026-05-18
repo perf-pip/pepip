@@ -3,9 +3,10 @@ set -euo pipefail
 
 # Validate that separate project folders can use different package versions.
 #
-# This script creates two project directories, installs different numpy/pandas
-# versions with pepip, and then prints versions from each venv to confirm
-# isolation and correct linking behavior.
+# This script creates two project directories, installs different pure-Python
+# package versions with pepip, and then prints versions from each venv to
+# confirm isolation and correct linking behavior. Pure-Python packages keep the
+# check portable on Windows without depending on a native build toolchain.
 
 venv_python() {
   local venv_dir="$1"
@@ -25,12 +26,12 @@ mkdir temp1 temp2
 
 (
   cd temp1
-  pepip install "numpy==2.4.4" "pandas==3.0.2"
+  pepip install "click==8.1.7" "requests==2.32.3"
 )
 (
   cd temp2
-  pepip install "numpy==2.3.5" "pandas==2.3.0"
+  pepip install "click==8.1.3" "requests==2.31.0"
 )
 
-"$(venv_python "./temp1/.venv")" -c "import numpy; print(numpy.__version__); import pandas; print(pandas.__version__)"
-"$(venv_python "./temp2/.venv")" -c "import numpy; print(numpy.__version__); import pandas; print(pandas.__version__)"
+"$(venv_python "./temp1/.venv")" -c "import importlib.metadata as md; import click, requests; print(md.version('click')); print(md.version('requests'))"
+"$(venv_python "./temp2/.venv")" -c "import importlib.metadata as md; import click, requests; print(md.version('click')); print(md.version('requests'))"

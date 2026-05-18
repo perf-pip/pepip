@@ -6,7 +6,7 @@ checks.
 ## Scripts
 
 - [`test_script.sh`](test_script.sh) creates several projects, installs repeated dependencies with `pepip`, then opens `ncdu` so you can inspect disk usage.
-- [`test_package_versions.sh`](test_package_versions.sh) installs different pinned versions of the same packages into separate projects and prints the imported versions.
+- [`test_package_versions.sh`](test_package_versions.sh) installs different pinned versions of the same pure-Python packages into separate projects and prints the imported versions.
 
 ## Run
 

@@ -13,7 +13,9 @@ Run commands from the repository's root unless a folder README says otherwise.
 - [uv](https://docs.astral.sh/uv/getting-started/installation/) tool installed and added to `PATH`.
 - `pepip` runnable from this checkout, or install it with `pip install -e .`.
 - For repository replay: `git`, `timeout`, `rg`, and network access.
-- For package smoke tests: Python 3.10 is expected by default.
+- For package smoke tests: Python 3.10 is expected by default. When launched
+  from a newer interpreter, the pepip smoke path recreates its working venv on
+  Python 3.10 so the pinned wheel set stays stable.
 - For Python version tests: `uv` downloads and manages Python 3.8 through 3.14
   for the matrix; local Python installations are not used for those versions.
 - On Windows, install [Git for Windows](https://git-scm.com/download/win) and

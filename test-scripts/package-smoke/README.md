@@ -48,5 +48,8 @@ Notes:
 
 - The runner creates or resets `./.venv` in the current working directory.
 - The default venv creation path expects Python 3.10 when using `uv` mode.
+- `pepip` mode now also uses that Python 3.10 environment when the host
+  interpreter is newer, so the pinned wheel set stays consistent on Windows and
+  other platforms.
 - `--package NAME==VERSION` can be repeated to override the default package
   list.
